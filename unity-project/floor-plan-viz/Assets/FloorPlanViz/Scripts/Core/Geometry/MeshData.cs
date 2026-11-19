@@ -48,12 +48,16 @@ namespace FloorPlanViz.Geometry
         /// <summary>Adds a horizontal polygon given in plan coordinates (plan y maps to world z).</summary>
         public void AddPolygon(IReadOnlyList<Vector2> polygon, float height, bool faceUp)
         {
+            AddTriangulated(polygon, PolygonTriangulator.Triangulate(polygon), height, faceUp);
+        }
+
+        void AddTriangulated(IReadOnlyList<Vector2> polygon, List<int> indices, float height, bool faceUp)
+        {
             var normal = faceUp ? Vector3.up : Vector3.down;
             var start = vertices.Count;
             foreach (var p in polygon)
                 AddVertex(new Vector3(p.x, height, p.y), normal, p);
 
-            var indices = PolygonTriangulator.Triangulate(polygon);
             for (var i = 0; i < indices.Count; i += 3)
             {
                 if (faceUp)
@@ -61,6 +65,48 @@ namespace FloorPlanViz.Geometry
                 else
                     triangles.AddRange(new[] { start + indices[i], start + indices[i + 1], start + indices[i + 2] });
             }
+        }
+
+        /// <summary>Adds a horizontal polygon with holes, in plan coordinates.</summary>
+        public void AddPolygon(IReadOnlyList<Vector2> outer, IReadOnlyList<IReadOnlyList<Vector2>> holes, float height, bool faceUp)
+        {
+            if (holes.Count == 0)
+            {
+                AddPolygon(outer, height, faceUp);
+                return;
+            }
+            var indices = PolygonTriangulator.Triangulate(outer, holes, out var ring);
+            AddTriangulated(ring, indices, height, faceUp);
+        }
+
+        /// <summary>A vertical quad from plan point a to b, facing right of a to b: outward for a counter-clockwise ring, into a clockwise one.</summary>
+        public void AddSide(Vector2 a, Vector2 b, float bottom, float top)
+        {
+            var along = b - a;
+            if (along.sqrMagnitude < 1e-8f || top - bottom < 1e-5f)
+                return;
+            var normal = new Vector3(along.y, 0f, -along.x).normalized;
+            var mid = (a + b) / 2f;
+            AddFace(new Vector3(mid.x, (bottom + top) / 2f, mid.y), normal, Vector3.up, along.magnitude, top - bottom);
+        }
+
+        /// <summary>A solid whose top is the polygon at <paramref name="top"/>, with vertical sides down to <paramref name="bottom"/>.</summary>
+        public void AddPrism(IReadOnlyList<Vector2> polygon, float bottom, float top)
+        {
+            var ring = PolygonTriangulator.Oriented(polygon, counterClockwise: true);
+            AddPolygon(ring, top, faceUp: true);
+            for (var i = 0; i < ring.Count; i++)
+                AddSide(ring[i], ring[(i + 1) % ring.Count], bottom, top);
+        }
+
+        /// <summary>A bar of square section from <paramref name="a"/> to <paramref name="b"/>.</summary>
+        public void AddBar(Vector3 a, Vector3 b, float size)
+        {
+            var along = b - a;
+            if (along.sqrMagnitude < 1e-8f)
+                return;
+            var up = Mathf.Abs(Vector3.Dot(along.normalized, Vector3.up)) > 0.99f ? Vector3.forward : Vector3.up;
+            AddBox((a + b) / 2f, Quaternion.LookRotation(along, up), new Vector3(size, size, along.magnitude));
         }
 
         public Mesh ToMesh(string name)

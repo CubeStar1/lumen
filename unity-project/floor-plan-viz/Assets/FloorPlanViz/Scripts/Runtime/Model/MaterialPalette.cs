@@ -23,6 +23,10 @@ namespace FloorPlanViz.Model
         [SerializeField] Material roof;
         [SerializeField] Material baseBoard;
         [SerializeField] Material shadowCatcher;
+        [SerializeField] Material stair;
+        [SerializeField] Material railing;
+        [SerializeField] Material slab;
+        [SerializeField] Material column;
         [SerializeField] Material defaultFloor;
         [SerializeField] List<FloorMaterial> floors = new();
 
@@ -34,6 +38,10 @@ namespace FloorPlanViz.Model
         public Material Roof => roof;
         public Material BaseBoard => baseBoard;
         public Material ShadowCatcher => shadowCatcher;
+        public Material Stair => stair ? stair : interiorWall;
+        public Material Railing => railing ? railing : frame;
+        public Material Slab => slab ? slab : roof;
+        public Material Column => column ? column : exteriorWall;
 
         public Material Floor(RoomType type) => Find(type) ?? Find(type.Base()) ?? defaultFloor;
 

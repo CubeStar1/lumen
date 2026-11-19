@@ -83,6 +83,33 @@ sketch scores 0.16 even though its wings are now correctly angled: the coarse re
 Eval (gpt-6.2-sol): ground floor wall F1 0.99, indian_30x35 1.00, two_bedroom 1.00, bungalow 0.99 (room IoU 0.92,
 opening recall 1.00). The curved-stair case was dropped from the set (its reference was too approximate).
 
+**V4-V8 (2026-11-19).**
+- V4 stairs (`geometry/stairs.py`): risers spread over the flights to the next floor (straight, dog-leg/U with
+  landings, curved via an arc), railings on the sides with no wall, wells cut out of the upper floor's rooms
+  and slab. An `up` stair pairs with the overlapping `down` stair above; a lone `down` stair is a well. A stair
+  with too few risers for the rise (cut by the drawing) keeps 17 cm risers; 5 risers or fewer are only marked.
+  Columns and floor slabs are in the geometry too.
+- V5 Unity: triangulation with holes, step/landing prisms, balusters and handrails, columns, slab undersides;
+  `FloorPlanModel.VisibleUpTo`, `Exploded`, `RoomCentre(level)`. Checked in `PlanDebug` with a two-storey test
+  building made from the bungalow (stairs, well, slab).
+- V6 buildings: `sheet.py` (drawing boxes, rotation, crops from the full-resolution upload), `building.py`
+  (floors read in parallel, stacked with `geometry/align`, terrace walls become parapets), background jobs
+  (`POST /jobs`, `GET /jobs/{id}`) with real stages; `try-plan --sheet` and multi-photo CLI.
+- V7 app: "New plan" opens an action sheet (single floor / building on one sheet / photo per floor, multi-select),
+  parses run as jobs with live stages, plan detail has a level segmented control (outline, stats and rooms per
+  level, stairs and columns drawn), the AR HUD has a vertical level picker (hides the levels above) and an
+  Explode toggle, walkthrough stands on the chosen level, edits go to the chosen level, library rows say
+  "3 floors".
+- Tests: 117 backend, 18 Unity EditMode.
+- Eval, rebuilt from saved Sol answers (no new model calls): wall F1 ground 0.99, indian 1.00, two_bedroom 1.00,
+  bungalow 0.99; stair recall 0.75 / 1.00 / - / 1.00.
+- Sheet sanity check on gpt-6-luna: the example sheet gives Ground, First and Terrace levels at 0 / 3.15 / 6.3 m,
+  rotated crops correct, curved stair found. Luna's geometry is rough and the sample sheet is only 793 x 1128 px;
+  the first floor's alignment fell back to centring (37% wall match). A Sol run on a full-resolution sheet is the
+  real test.
+- Not done (V8): iPad run of both example plans, hip roofs (the extraction has no roof data yet), per-floor
+  checklist in the progress card (it shows the live stage text instead), 90/180 degree alignment between crops.
+
 ## Where things stand
 
 | Milestone | State |

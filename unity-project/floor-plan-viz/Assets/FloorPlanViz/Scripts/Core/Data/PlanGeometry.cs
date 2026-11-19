@@ -22,6 +22,9 @@ namespace FloorPlanViz.Data
         public float Height { get; set; }
         public List<RoomData> Rooms { get; set; } = new();
         public List<WallData> Walls { get; set; } = new();
+        public List<StairData> Stairs { get; set; } = new();
+        public List<ColumnData> Columns { get; set; } = new();
+        public List<SlabData> Slabs { get; set; } = new();
     }
 
     public sealed class PlanBounds
@@ -39,6 +42,7 @@ namespace FloorPlanViz.Data
         public RoomType Type { get; set; }
         public bool Outdoor { get; set; }
         public List<PlanPoint> Polygon { get; set; } = new();
+        public List<List<PlanPoint>> Holes { get; set; } = new();
         public PlanPoint Centroid { get; set; }
         public float Area { get; set; }
     }
@@ -63,5 +67,44 @@ namespace FloorPlanViz.Data
         public float Width { get; set; }
         public float Sill { get; set; }
         public float Head { get; set; }
+    }
+
+    /// <summary>A staircase, heights relative to its level's floor. One arriving from the level below has no steps, only the railing round its well.</summary>
+    public sealed class StairData
+    {
+        public string Id { get; set; }
+        public StairDirection Direction { get; set; }
+        public float Riser { get; set; }
+        public List<StepData> Steps { get; set; } = new();
+        public List<LandingData> Landings { get; set; } = new();
+        public List<List<PlanPoint3>> Railings { get; set; } = new();
+        public List<PlanPoint> Footprint { get; set; } = new();
+    }
+
+    public sealed class StepData
+    {
+        public List<PlanPoint> Corners { get; set; } = new();
+        public float Bottom { get; set; }
+        public float Top { get; set; }
+    }
+
+    public sealed class LandingData
+    {
+        public List<PlanPoint> Polygon { get; set; } = new();
+        public float Height { get; set; }
+    }
+
+    public sealed class ColumnData
+    {
+        public PlanPoint Position { get; set; }
+        public float Size { get; set; }
+        public float Height { get; set; }
+    }
+
+    public sealed class SlabData
+    {
+        public List<PlanPoint> Outline { get; set; } = new();
+        public List<List<PlanPoint>> Holes { get; set; } = new();
+        public float Thickness { get; set; }
     }
 }

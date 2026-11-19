@@ -44,8 +44,8 @@ namespace FloorPlanViz.AR
                 target.localScale = Vector3.one * scale;
         }
 
-        /// <summary>Shows the model at full size with the viewer standing in its largest room.</summary>
-        public void ShowWalkthrough(FloorPlanModel model, float floorHeight)
+        /// <summary>Shows the model at full size with the viewer standing in the largest room of a level.</summary>
+        public void ShowWalkthrough(FloorPlanModel model, float floorHeight, int level = 0)
         {
             Mode = ViewMode.Walkthrough;
             if (appearing != null)
@@ -61,7 +61,7 @@ namespace FloorPlanViz.AR
             target.rotation = Quaternion.LookRotation(forward.sqrMagnitude > 1e-4f ? forward : Vector3.forward);
 
             var feet = new Vector3(viewer.position.x, floorHeight, viewer.position.z);
-            target.position = feet - target.rotation * model.MainRoomCentre;
+            target.position = feet - target.rotation * model.RoomCentre(level);
         }
 
         static IEnumerator Appear(Transform target, float scale, float baseThickness)

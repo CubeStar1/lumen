@@ -1,4 +1,5 @@
 import io
+import time
 
 import pytest
 from factories import two_room_drawing
@@ -118,3 +119,30 @@ def test_edit_of_a_missing_level_is_not_found(client, two_rooms):
     }
 
     assert client.post("/plans/edit", json=payload).status_code == 404
+
+
+def test_jobs_parse_in_the_background_and_save_the_plan(client):
+    image = ("plan.png", png_bytes(), "image/png")
+    response = client.post("/jobs", data={"kind": "floor"}, files=[("images", image)])
+
+    assert response.status_code == 202
+    job = response.json()
+    for _ in range(200):
+        job = client.get(f"/jobs/{job['id']}").json()
+        if job["state"] != "running":
+            break
+        time.sleep(0.01)
+    assert job["state"] == "done", job
+    assert job["stages"] == [{"name": "Reading plan", "state": "done"}]
+    assert client.get(f"/plans/{job['plan_id']}").json()["kind"] == "floor"
+
+
+def test_a_floor_job_takes_one_image(client):
+    image = ("plan.png", png_bytes(), "image/png")
+    response = client.post("/jobs", data={"kind": "floor"}, files=[("images", image)] * 2)
+
+    assert response.status_code == 422
+
+
+def test_unknown_job_is_not_found(client):
+    assert client.get("/jobs/0123456789ab").status_code == 404

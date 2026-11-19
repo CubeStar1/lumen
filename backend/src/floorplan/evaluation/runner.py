@@ -119,8 +119,8 @@ class _Recorder:
         self._model = model
         self.answer: FloorExtraction | None = None
 
-    def extract(self, image: PreparedImage, feedback=None) -> FloorExtraction:
-        self.answer = self._model.extract(image, feedback)
+    def extract(self, image: PreparedImage, feedback=None, hint=None) -> FloorExtraction:
+        self.answer = self._model.extract(image, feedback, hint)
         return self.answer
 
     def edit(self, floor: FloorSpec, instruction: str, feedback=None) -> FloorSpec:
@@ -165,7 +165,7 @@ def _rebuild_all(folder: Path, name: str) -> list[Prediction]:
     for path in sorted(folder.glob(f"{name}.*.json")):
         data = json.loads(path.read_text(encoding="utf-8"))
         floor = (
-            to_floor(FloorExtraction.model_validate(data))
+            to_floor(_extraction(data))
             if "dimensions" in data
             else FloorSpec.model_validate(
                 upgrade_spec(_as_building(data)).levels[0].floor.model_dump()
@@ -196,6 +196,13 @@ def _load_all(folder: Path, name: str) -> list[Prediction]:
         PlanResponse.model_validate(upgrade_plan(json.loads(p.read_text(encoding="utf-8"))))
         for p in paths
     ]
+
+
+def _extraction(data: dict) -> FloorExtraction:
+    """A saved raw answer, filling in fields added since it was saved."""
+    for room in data.get("rooms", []):
+        room.setdefault("size", None)
+    return FloorExtraction.model_validate(data)
 
 
 if __name__ == "__main__":

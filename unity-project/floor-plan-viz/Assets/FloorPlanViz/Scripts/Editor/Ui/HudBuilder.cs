@@ -35,7 +35,11 @@ namespace FloorPlanViz.Editor
             var labels = BuildToolbarButton(toolbar, "Labels");
             var mode = BuildToolbarButton(toolbar, "Mode");
             var reset = BuildToolbarButton(toolbar, "Reset");
+            var explode = BuildToolbarButton(toolbar, "Explode");
             var edit = BuildToolbarButton(toolbar, "Edit");
+
+            var levels = Segmented("Levels", rect, vertical: true, onGlass: true);
+            Place((RectTransform)levels.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-12f, 40f), Vector2.zero);
 
             SerializedWiring.Set(hud, "closeButton", close);
             SerializedWiring.Set(hud, "titleText", title);
@@ -50,6 +54,8 @@ namespace FloorPlanViz.Editor
             SerializedWiring.Set(hud, "modeButton", mode);
             SerializedWiring.Set(hud, "resetButton", reset);
             SerializedWiring.Set(hud, "editButton", edit);
+            SerializedWiring.Set(hud, "explodeButton", explode);
+            SerializedWiring.Set(hud, "levelPicker", levels);
             return hud;
         }
 
@@ -71,7 +77,7 @@ namespace FloorPlanViz.Editor
         static ToolbarButton BuildToolbarButton(Transform parent, string name)
         {
             var rect = Node(name, parent);
-            Size(rect, width: 62f, height: 64f);
+            Size(rect, width: 58f, height: 64f);
             var disc = Place(Node("Disc", rect), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero, Vector2.one * 44f);
             var discImage = Fill(disc, Color.white.WithAlpha(0.18f), 22f);
             var button = Pressable(rect, discImage, 0.7f);

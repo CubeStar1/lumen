@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 namespace FloorPlanViz.UI
 {
-    /// <summary>Draws a top-down 2D view of one level: room fills, walls and openings.</summary>
+    /// <summary>Draws a top-down 2D view of one level: room fills, walls, openings, stairs and columns.</summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class PlanOutlineGraphic : MaskableGraphic
     {
@@ -18,6 +18,9 @@ namespace FloorPlanViz.UI
 
         static readonly Color WallColour = Theme.Hex(0x2C2C2E);
         static readonly Color WindowColour = Theme.Hex(0x64A8FF);
+        static readonly Color StepColour = Theme.Hex(0xF4F2EE);
+        static readonly Color StepLine = Theme.Hex(0x8E8E93);
+        const float StepLinePixels = 1f;
 
         LevelGeometry level;
         PlanBounds bounds;
@@ -47,6 +50,31 @@ namespace FloorPlanViz.UI
                 if (room.Outdoor)
                     colour.a *= OutdoorAlpha;
                 AddPolygon(vh, room.Polygon.Select(p => ToRect(p.ToVector2())).ToList(), colour);
+            }
+
+            foreach (var stair in level.Stairs)
+            {
+                var shapes = stair.Steps.Select(s => s.Corners).Concat(stair.Landings.Select(l => l.Polygon)).ToList();
+                if (stair.Steps.Count == 0)
+                    shapes.Add(stair.Footprint);
+                foreach (var shape in shapes.Where(s => s.Count >= 3))
+                {
+                    var points = shape.Select(p => ToRect(p.ToVector2())).ToList();
+                    AddPolygon(vh, points, StepColour);
+                    for (var i = 0; i < points.Count; i++)
+                        AddSegment(vh, points[i], points[(i + 1) % points.Count], StepLinePixels, StepLine, extend: false);
+                }
+            }
+
+            foreach (var column in level.Columns)
+            {
+                var half = column.Size / 2f;
+                var c = column.Position.ToVector2();
+                AddPolygon(vh, new List<Vector2>
+                {
+                    ToRect(c + new Vector2(-half, -half)), ToRect(c + new Vector2(half, -half)),
+                    ToRect(c + new Vector2(half, half)), ToRect(c + new Vector2(-half, half)),
+                }, WallColour);
             }
 
             foreach (var wall in level.Walls)

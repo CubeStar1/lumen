@@ -2,10 +2,11 @@ from pathlib import Path
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from matplotlib.patches import Rectangle
 from PIL import Image
 
 from floorplan.geometry.vec import add, normalized, scale, sub, vec
-from floorplan.models import BuildingGeometry, LevelGeometry, OpeningType, Wall
+from floorplan.models import BuildingGeometry, LevelGeometry, OpeningType, Stair, Wall
 
 OPENING_COLOURS = {
     OpeningType.DOOR: "tab:green",
@@ -37,10 +38,41 @@ def _draw_level(axes: Axes, geometry: LevelGeometry) -> None:
 
     for wall in geometry.walls:
         _draw_wall(axes, wall)
+    for stair in geometry.stairs:
+        _draw_stair(axes, stair)
+    for column in geometry.columns:
+        half = column.size / 2
+        axes.add_patch(
+            Rectangle(
+                (column.position.x - half, column.position.y - half),
+                column.size,
+                column.size,
+                color="black",
+            )
+        )
 
     axes.set_aspect("equal")
     axes.set_title(f"{geometry.name} (m)")
     axes.grid(alpha=0.3)
+
+
+def _draw_stair(axes: Axes, stair: Stair) -> None:
+    if not stair.steps:
+        xs, ys = [p.x for p in stair.footprint], [p.y for p in stair.footprint]
+        axes.fill(xs, ys, fill=False, hatch="xx", edgecolor="grey", linewidth=0)
+    for step in stair.steps:
+        xs, ys = [p.x for p in step.corners], [p.y for p in step.corners]
+        axes.fill(xs, ys, facecolor="white", edgecolor="grey", linewidth=0.6)
+    for landing in stair.landings:
+        xs, ys = [p.x for p in landing.polygon], [p.y for p in landing.polygon]
+        axes.fill(xs, ys, facecolor="white", edgecolor="grey", linewidth=0.6)
+    for railing in stair.railings:
+        axes.plot([p.x for p in railing], [p.y for p in railing], color="tab:red", linewidth=1)
+    if stair.steps:
+        first, last = stair.steps[0].corners, stair.steps[-1].corners
+        a = ((first[0].x + first[1].x) / 2, (first[0].y + first[1].y) / 2)
+        b = ((last[2].x + last[3].x) / 2, (last[2].y + last[3].y) / 2)
+        axes.annotate("", b, a, arrowprops={"arrowstyle": "->", "color": "tab:red"})
 
 
 def _draw_wall(axes: Axes, wall: Wall) -> None:

@@ -19,6 +19,8 @@ namespace FloorPlanViz.Editor
             var title = Label("Title", content, "Plan", TextStyle.Title1, Theme.Label);
             title.margin = new Vector4(0f, 0f, 0f, 4f);
 
+            var levels = Segmented("Levels", content, vertical: false, onGlass: false);
+
             var planCard = Card("PlanCard", content, 16f);
             Size(planCard, height: 300f);
             var outline = Stretch(Node("Outline", planCard), 14f, 14f, 14f, 14f).gameObject.AddComponent<PlanOutlineGraphic>();
@@ -51,6 +53,7 @@ namespace FloorPlanViz.Editor
             SerializedWiring.Set(screen, "moreButton", more);
             SerializedWiring.Set(screen, "navTitle", navTitle);
             SerializedWiring.Set(screen, "titleText", title);
+            SerializedWiring.Set(screen, "levelPicker", levels);
             SerializedWiring.Set(screen, "outline", outline);
             SerializedWiring.Set(screen, "roomsValue", rooms);
             SerializedWiring.Set(screen, "areaValue", area);

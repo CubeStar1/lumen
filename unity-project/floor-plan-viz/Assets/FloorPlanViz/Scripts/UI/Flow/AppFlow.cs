@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using FloorPlanViz.Api;
 using FloorPlanViz.Data;
@@ -9,17 +12,9 @@ namespace FloorPlanViz.UI
     public sealed class AppFlow : MonoBehaviour
     {
         const int MaxImageSize = 2048;
+        const int MaxSheetSize = 4096;
         const int JpegQuality = 90;
-
-        static readonly string[] ParseStages =
-        {
-            "Uploading your image",
-            "Reading the drawing",
-            "Finding rooms and their sizes",
-            "Placing doors and windows",
-            "Checking the layout",
-            "Almost there",
-        };
+        const float PollSeconds = 1.5f;
 
         static readonly string[] EditStages = { "Sending your change", "Updating the plan", "Rebuilding the model" };
 
@@ -51,7 +46,7 @@ namespace FloorPlanViz.UI
             api = new PlanApiClient(apiSettings);
             thumbnails = new ThumbnailCache(api);
 
-            library.NewPlanRequested += PickAndParse;
+            library.NewPlanRequested += ChooseNewPlan;
             library.SampleRequested += () => OpenDetail(PlanDocument.Sample(PlanJson.Deserialize<PlanResponse>(samplePlan.text)));
             library.SettingsRequested += () => settingsSheet.Show(apiSettings.BaseUrl, connection.state, connection.detail);
             library.RefreshRequested += RefreshLibrary;
@@ -130,20 +125,55 @@ namespace FloorPlanViz.UI
             settingsSheet.SetStatus(state, text);
         }
 
-        async void PickAndParse()
+        void ChooseNewPlan() =>
+            actionSheet.Show("New plan",
+                new SheetAction("Single floor plan", () => PickAndParse(ParseKind.Floor)),
+                new SheetAction("Whole building · one sheet", () => PickAndParse(ParseKind.Sheet)),
+                new SheetAction("Whole building · photo per floor", () => PickAndParse(ParseKind.Photos)));
+
+        async void PickAndParse(ParseKind kind)
         {
-            var image = await ImagePicker.PickAsync(MaxImageSize);
-            if (image == null)
+            var images = await PickImages(kind);
+            if (images.Count == 0)
                 return;
 
-            var jpeg = image.EncodeToJPG(JpegQuality);
-            Destroy(image);
-            await requests.Run("Reading your floor plan", ParseStages, token => api.ParseAsync(jpeg, token), saved =>
+            var jpegs = images.Select(image => image.EncodeToJPG(JpegQuality)).ToList();
+            foreach (var image in images)
+                Destroy(image);
+            var title = kind == ParseKind.Floor ? "Reading your floor plan" : "Reading your building";
+            await requests.Run(title, (token, report) => ParseAsync(kind, jpegs, report, token), saved =>
             {
                 OpenDetail(PlanDocument.From(saved));
                 toast.Show("Saved to your plans", ToastKind.Success);
             });
         }
+
+        static async Awaitable<List<Texture2D>> PickImages(ParseKind kind)
+        {
+            if (kind == ParseKind.Photos)
+                return await ImagePicker.PickManyAsync(MaxImageSize, "Choose a photo of each floor");
+            var image = await ImagePicker.PickAsync(kind == ParseKind.Sheet ? MaxSheetSize : MaxImageSize);
+            return image == null ? new List<Texture2D>() : new List<Texture2D> { image };
+        }
+
+        async Awaitable<SavedPlan> ParseAsync(ParseKind kind, List<byte[]> jpegs, Action<string> report, CancellationToken token)
+        {
+            report(jpegs.Count > 1 ? $"Uploading {jpegs.Count} photos" : "Uploading your image");
+            var job = await api.StartJobAsync(kind, jpegs, token);
+            while (job.State == JobState.Running)
+            {
+                report(Describe(job));
+                await Awaitable.WaitForSecondsAsync(PollSeconds, token);
+                job = await api.JobAsync(job.Id, token);
+            }
+            if (job.State == JobState.Failed)
+                throw new PlanApiException(job.Error ?? "The plan could not be read.");
+            report("Opening the plan");
+            return await api.GetAsync(job.PlanId, token);
+        }
+
+        static string Describe(ParseJob job) =>
+            job.Stages.Count <= 1 ? job.Stage : $"{job.Stage} · {job.StagesDone} of {job.Stages.Count} done";
 
         async void OpenSaved(PlanSummary summary)
         {
@@ -207,7 +237,7 @@ namespace FloorPlanViz.UI
         {
             editSheet.SetVisible(false);
             var document = current;
-            var level = document.Plan.Geometry.Ground.Index;
+            var level = ar.IsActive ? ar.SelectedLevel : document.Plan.Geometry.Ground.Index;
             if (document.IsSaved)
             {
                 await requests.Run("Applying your change", EditStages, token => api.EditAsync(document.Id, instruction, level, token),

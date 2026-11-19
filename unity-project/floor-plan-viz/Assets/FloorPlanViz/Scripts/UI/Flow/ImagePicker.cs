@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace FloorPlanViz.UI
@@ -13,7 +16,25 @@ namespace FloorPlanViz.UI
 
             return string.IsNullOrEmpty(path)
                 ? null
-                : NativeGallery.LoadImageAtPath(path, maxSize, markTextureNonReadable: false, generateMipmaps: false);
+                : Load(path, maxSize);
         }
+
+        /// <summary>Lets the user pick several photos, or one where the gallery can't pick more. Returns the readable textures.</summary>
+        public static async Awaitable<List<Texture2D>> PickManyAsync(int maxSize, string title)
+        {
+            if (!NativeGallery.CanSelectMultipleFilesFromGallery())
+            {
+                var single = await PickAsync(maxSize);
+                return single == null ? new List<Texture2D>() : new List<Texture2D> { single };
+            }
+
+            var completion = new AwaitableCompletionSource<string[]>();
+            NativeGallery.GetImagesFromGallery(paths => completion.SetResult(paths), title, "image/*");
+            var paths = await completion.Awaitable ?? Array.Empty<string>();
+            return paths.Select(path => Load(path, maxSize)).Where(texture => texture != null).ToList();
+        }
+
+        static Texture2D Load(string path, int maxSize) =>
+            NativeGallery.LoadImageAtPath(path, maxSize, markTextureNonReadable: false, generateMipmaps: false);
     }
 }

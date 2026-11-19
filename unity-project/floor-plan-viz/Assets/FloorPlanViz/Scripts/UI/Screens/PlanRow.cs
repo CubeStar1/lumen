@@ -19,7 +19,8 @@ namespace FloorPlanViz.UI
         public async void Bind(PlanSummary plan, bool last, Action onClick, Func<Awaitable<Texture2D>> loadThumbnail)
         {
             titleText.text = plan.Name;
-            detailText.text = $"{Format.Summary(plan.RoomCount, plan.Area)} · {Format.Size(plan.Width, plan.Depth)}";
+            var floors = plan.LevelCount > 1 ? $"{Format.Floors(plan.LevelCount)} · " : "";
+            detailText.text = $"{floors}{Format.Summary(plan.RoomCount, plan.Area)} · {Format.Size(plan.Width, plan.Depth)}";
             dateText.text = Format.Relative(plan.UpdatedAt);
             separator.SetActive(!last);
             thumbnail.enabled = false;

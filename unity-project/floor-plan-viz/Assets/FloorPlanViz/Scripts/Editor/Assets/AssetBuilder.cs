@@ -60,6 +60,10 @@ namespace FloorPlanViz.Editor
             SerializedWiring.Set(palette, "glass", MaterialFactory.Glass("Glass", new Color(0.62f, 0.8f, 0.92f, 0.32f), 0.95f));
             SerializedWiring.Set(palette, "roof", MaterialFactory.Lit("Roof", Theme(0xD6D2CB), 0.1f, concrete, 2f));
             SerializedWiring.Set(palette, "baseBoard", MaterialFactory.Lit("BaseBoard", Theme(0xFAF9F7), 0.25f));
+            SerializedWiring.Set(palette, "stair", MaterialFactory.Lit("Stair", Theme(0xE4DED4), 0.2f, concrete, 2f));
+            SerializedWiring.Set(palette, "railing", MaterialFactory.Lit("Railing", Theme(0x2E2F33), 0.6f, metallic: 0.5f));
+            SerializedWiring.Set(palette, "slab", MaterialFactory.Lit("Slab", Theme(0xCFCAC2), 0.1f, concrete, 2f));
+            SerializedWiring.Set(palette, "column", MaterialFactory.Lit("Column", Theme(0xE8E4DD), 0.12f, plaster, 2f));
             SerializedWiring.Set(palette, "shadowCatcher", MaterialFactory.ShadowCatcher("ShadowCatcher", 0.38f));
             SerializedWiring.Set(palette, "defaultFloor", MaterialFactory.Lit("Floor_Other", Theme(0xD8D7D2), 0.2f, concrete, 2f));
 

@@ -78,9 +78,11 @@ class PixelFlight(BaseModel):
 
 class PixelStair(BaseModel):
     id: str
-    direction: StairDirection
-    flights: list[PixelFlight]
-    landings: list[list[Point]]
+    direction: StairDirection = Field(
+        description="up if it climbs from this floor, down if it arrives from the floor below."
+    )
+    flights: list[PixelFlight] = Field(description="In climbing order, the lowest flight first.")
+    landings: list[list[Point]] = Field(description="Landing outlines between the flights.")
 
 
 class PixelColumn(BaseModel):

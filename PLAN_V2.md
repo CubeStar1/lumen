@@ -318,11 +318,11 @@ There's no way to know whether a prompt change helps without a baseline. Add `ba
 | V1 ✅ | Contract v2 + migration | `FloorSpec` / `BuildingSpec` / `BuildingGeometry` models; v1 records and the sample load as one-level buildings; all v1 tests still pass |
 | V2 ✅ | Wall graph + regions | `orient`, `wallgraph`, `regions`, `scale` with unit tests (L-shape, 45° bay, stub wall, open-plan two-label face, porch, parallel walls 0.12 m apart, ft-in parsing) |
 | V3 ✅ | v2 floor extraction | New prompts with pixel coordinates; eval beats v1 on wall F1 and room IoU on the real ground-floor plan |
-| V4 | Stairs (single floor) | Straight, L, U and curved flights → steps, landings, railings; debug renders correct |
-| V5 | Unity levels + stairs | `BuildingBuilder`, slab holes, stairs, columns, parapets; `PlanDebug` shows the real ground-floor plan correctly |
-| V6 | Building pipeline | Sheet pass, crop/rotate, parallel floors, heights, alignment, jobs API; the example sheet produces 3 aligned levels |
-| V7 | App UI | Plan-type action sheet, job progress, level control in detail, level picker + explode in AR, per-level edits |
-| V8 | Device check + polish | iPad run of both example plans; hip roof; eval numbers in progress.md |
+| V4 ✅ | Stairs (single floor) | Straight, L, U and curved flights → steps, landings, railings; debug renders correct |
+| V5 ✅ | Unity levels + stairs | `BuildingBuilder`, slab holes, stairs, columns, parapets; `PlanDebug` shows the real ground-floor plan correctly |
+| V6 ✅ | Building pipeline | Sheet pass, crop/rotate, parallel floors, heights, alignment, jobs API; the example sheet produces 3 aligned levels |
+| V7 ✅ | App UI | Plan-type action sheet, job progress, level control in detail, level picker + explode in AR, per-level edits |
+| V8 ◐ | Device check + polish | iPad run of both example plans; hip roof; eval numbers in progress.md |
 
 V0–V5 fix the single-floor problem without touching the building flow, so they're worth shipping on
 their own. V6–V7 add buildings on top.

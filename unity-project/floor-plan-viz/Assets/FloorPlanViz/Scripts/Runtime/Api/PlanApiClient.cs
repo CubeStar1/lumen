@@ -55,14 +55,17 @@ namespace FloorPlanViz.Api
         public Awaitable<SavedPlan> GetAsync(string id, CancellationToken cancellation) =>
             SendAsync<SavedPlan>(UnityWebRequest.Get(Url($"/plans/{id}")), cancellation);
 
-        public Awaitable<SavedPlan> ParseAsync(byte[] jpeg, CancellationToken cancellation)
+        /// <summary>Starts reading the images on the server; poll the job with <see cref="JobAsync"/>.</summary>
+        public Awaitable<ParseJob> StartJobAsync(ParseKind kind, IReadOnlyList<byte[]> jpegs, CancellationToken cancellation)
         {
-            var form = new List<IMultipartFormSection>
-            {
-                new MultipartFormFileSection("image", jpeg, "plan.jpg", "image/jpeg"),
-            };
-            return SendAsync<SavedPlan>(UnityWebRequest.Post(Url("/plans/parse"), form), cancellation);
+            var form = new List<IMultipartFormSection> { new MultipartFormDataSection("kind", kind.ToString().ToLowerInvariant()) };
+            for (var i = 0; i < jpegs.Count; i++)
+                form.Add(new MultipartFormFileSection("images", jpegs[i], $"plan{i + 1}.jpg", "image/jpeg"));
+            return SendAsync<ParseJob>(UnityWebRequest.Post(Url("/jobs"), form), cancellation);
         }
+
+        public Awaitable<ParseJob> JobAsync(string id, CancellationToken cancellation) =>
+            SendAsync<ParseJob>(UnityWebRequest.Get(Url($"/jobs/{id}")), cancellation, QuickTimeoutSeconds);
 
         public Awaitable<SavedPlan> EditAsync(string id, string instruction, int level, CancellationToken cancellation) =>
             SendAsync<SavedPlan>(Json("POST", $"/plans/{id}/edit", new InstructionRequest { Instruction = instruction, Level = level }), cancellation);

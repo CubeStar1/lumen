@@ -13,6 +13,18 @@ namespace FloorPlanViz.UI
 
         public static string Summary(int rooms, float area) => $"{Rooms(rooms)} · {Area(area)}";
 
+        public static string Floors(int count) => count == 1 ? "1 floor" : $"{count} floors";
+
+        /// <summary>A short level name for pickers: "First floor" becomes "First".</summary>
+        public static string LevelLabel(string name)
+        {
+            var trimmed = name.Trim();
+            const string suffix = " floor";
+            return trimmed.EndsWith(suffix, StringComparison.OrdinalIgnoreCase) && trimmed.Length > suffix.Length
+                ? trimmed[..^suffix.Length]
+                : trimmed;
+        }
+
         public static string Relative(DateTime time)
         {
             var local = time.Kind == DateTimeKind.Unspecified ? time : time.ToLocalTime();

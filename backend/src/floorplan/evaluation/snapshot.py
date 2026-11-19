@@ -98,7 +98,12 @@ def from_geometry(geometry: LevelGeometry) -> Snapshot:
         SnapshotRoom(room_category(r.type), Polygon([vec(p) for p in r.polygon]))
         for r in geometry.rooms
     ]
-    return Snapshot(walls=walls, rooms=rooms, openings=openings, stairs=[])
+    stairs = [
+        SnapshotStair(Polygon([vec(p) for p in s.footprint]), len(s.steps) or None)
+        for s in geometry.stairs
+        if len(s.footprint) >= 3
+    ]
+    return Snapshot(walls=walls, rooms=rooms, openings=openings, stairs=stairs)
 
 
 def room_category(kind: str) -> str:

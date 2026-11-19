@@ -19,6 +19,10 @@ namespace FloorPlanViz.UI
 
         void OnDestroy() => pending?.Cancel();
 
+        /// <summary>Runs a call that reports its own progress through the overlay.</summary>
+        public Awaitable Run<T>(string title, Func<CancellationToken, Action<string>, Awaitable<T>> call, Action<T> onSuccess) =>
+            Run(title, null, token => call(token, overlay.Report), onSuccess);
+
         public async Awaitable Run<T>(string title, string[] stages, Func<CancellationToken, Awaitable<T>> call,
             Action<T> onSuccess, Action<string> onError = null)
         {

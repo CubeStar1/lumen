@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     max_upload_bytes: int = 15 * 1024 * 1024
     data_dir: Path = Path("data")
     stored_image_side: int = 1600
+    stored_sheet_side: int = 3200
+    max_photos: int = 8
     thumbnail_side: int = 320
 
 

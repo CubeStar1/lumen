@@ -130,6 +130,7 @@ class LevelSpec(BaseModel):
     elevation: float
     slab: float = 0.15
     offset: Point = Point(x=0, y=0)
+    roof: bool = False
     floor: FloorSpec
 
 
@@ -144,12 +145,19 @@ class Bounds(BaseModel):
     max: Point
 
 
+class Point3(BaseModel):
+    x: float
+    y: float
+    z: float
+
+
 class Room(BaseModel):
     id: str
     name: str
     type: RoomType
     outdoor: bool
     polygon: list[Point]
+    holes: list[list[Point]] = []
     centroid: Point
     area: float
 
@@ -174,6 +182,42 @@ class Wall(BaseModel):
     openings: list[Opening] = []
 
 
+class Step(BaseModel):
+    corners: list[Point]
+    bottom: float
+    top: float
+
+
+class Landing(BaseModel):
+    polygon: list[Point]
+    height: float
+
+
+class Stair(BaseModel):
+    """A staircase, heights relative to its level's floor. A stair that arrives from the level
+    below has no steps: only the railing around its well."""
+
+    id: str
+    direction: StairDirection
+    riser: float
+    steps: list[Step]
+    landings: list[Landing]
+    railings: list[list[Point3]]
+    footprint: list[Point]
+
+
+class Column(BaseModel):
+    position: Point
+    size: float
+    height: float
+
+
+class Slab(BaseModel):
+    outline: list[Point]
+    holes: list[list[Point]]
+    thickness: float
+
+
 class LevelGeometry(BaseModel):
     index: int
     name: str
@@ -181,6 +225,9 @@ class LevelGeometry(BaseModel):
     height: float
     rooms: list[Room]
     walls: list[Wall]
+    stairs: list[Stair] = []
+    columns: list[Column] = []
+    slabs: list[Slab] = []
 
 
 class BuildingGeometry(BaseModel):

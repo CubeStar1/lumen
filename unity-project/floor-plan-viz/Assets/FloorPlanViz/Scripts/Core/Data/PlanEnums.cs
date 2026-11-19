@@ -37,6 +37,12 @@ namespace FloorPlanViz.Data
         Parapet,
     }
 
+    public enum StairDirection
+    {
+        Up,
+        Down,
+    }
+
     public static class PlanEnumExtensions
     {
         /// <summary>The original room type whose material and style a newer type borrows.</summary>

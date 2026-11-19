@@ -38,7 +38,8 @@ namespace FloorPlanViz.Model
                 palette.ShadowCatcher, meshes, castShadows: false);
 
             var model = root.gameObject.AddComponent<FloorPlanModel>();
-            model.Initialize(geometry, new ModelParts(roof, labels, labelGroups, new[] { board, ground }, BaseThickness), meshes);
+            var parts = new ModelParts(roof, levelRoots.ToArray(), labels, labelGroups, new[] { board, ground }, BaseThickness);
+            model.Initialize(geometry, parts, meshes);
             model.RoofVisible = false;
             return model;
         }
@@ -59,6 +60,10 @@ namespace FloorPlanViz.Model
             AddPart(levelRoot, "Glass", PlanMeshBuilder.Glass(level.Walls), palette.Glass, meshes, castShadows: false);
             foreach (var rooms in level.Rooms.GroupBy(r => r.Type))
                 AddPart(levelRoot, $"Floor_{rooms.Key}", PlanMeshBuilder.Floors(rooms), palette.Floor(rooms.Key), meshes);
+            AddPart(levelRoot, "Stairs", PlanMeshBuilder.Treads(level.Stairs), palette.Stair, meshes);
+            AddPart(levelRoot, "Railings", PlanMeshBuilder.Railings(level.Stairs), palette.Railing, meshes);
+            AddPart(levelRoot, "Columns", PlanMeshBuilder.Columns(level.Columns), palette.Column, meshes);
+            AddPart(levelRoot, "Slab", PlanMeshBuilder.Slabs(level.Slabs), palette.Slab, meshes);
             return levelRoot;
         }
 

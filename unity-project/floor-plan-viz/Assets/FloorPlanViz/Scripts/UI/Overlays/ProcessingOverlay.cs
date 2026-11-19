@@ -16,6 +16,7 @@ namespace FloorPlanViz.UI
         [SerializeField] Button cancelButton;
 
         string[] stages = Array.Empty<string>();
+        string reported;
         float startedAt;
 
         public event Action Cancelled;
@@ -26,10 +27,14 @@ namespace FloorPlanViz.UI
         {
             titleText.text = title;
             stages = workStages ?? Array.Empty<string>();
+            reported = null;
             startedAt = Time.unscaledTime;
             SetVisible(true);
             Refresh();
         }
+
+        /// <summary>Shows the stage the work reports, in place of the timed stages.</summary>
+        public void Report(string stage) => reported = stage;
 
         protected override void Update()
         {
@@ -40,7 +45,7 @@ namespace FloorPlanViz.UI
         void Refresh()
         {
             var elapsed = Time.unscaledTime - startedAt;
-            var stage = stages.Length == 0 ? "" : stages[Mathf.Min((int)(elapsed / SecondsPerStage), stages.Length - 1)];
+            var stage = reported ?? (stages.Length == 0 ? "" : stages[Mathf.Min((int)(elapsed / SecondsPerStage), stages.Length - 1)]);
             if (stageText.text != stage)
                 stageText.text = stage;
             elapsedText.text = elapsed < 2f ? "" : $"{elapsed:0} s";

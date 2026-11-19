@@ -26,6 +26,10 @@ namespace FloorPlanViz.Geometry
         const float FrameWidth = 0.05f;
         const float GlassThickness = 0.012f;
         const float BaseInset = 0.002f;
+        const float RailHeight = 0.9f;
+        const float RailSize = 0.05f;
+        const float BalusterSize = 0.025f;
+        const float BalusterSpacing = 0.15f;
 
         public static WallMeshes Walls(IEnumerable<WallData> walls)
         {
@@ -35,7 +39,79 @@ namespace FloorPlanViz.Geometry
             return meshes;
         }
 
-        public static MeshData Floors(IEnumerable<RoomData> rooms) => Slabs(rooms, 0f);
+        public static MeshData Floors(IEnumerable<RoomData> rooms)
+        {
+            var mesh = new MeshData();
+            foreach (var room in rooms)
+                mesh.AddPolygon(Plan(room.Polygon), room.Holes.Select(Plan).ToList(), 0f, faceUp: true);
+            return mesh;
+        }
+
+        /// <summary>Solid step blocks and landings.</summary>
+        public static MeshData Treads(IEnumerable<StairData> stairs)
+        {
+            var mesh = new MeshData();
+            foreach (var stair in stairs)
+            {
+                foreach (var step in stair.Steps)
+                    mesh.AddPrism(Plan(step.Corners), step.Bottom, step.Top);
+                foreach (var landing in stair.Landings)
+                    mesh.AddPrism(Plan(landing.Polygon), 0f, landing.Height);
+            }
+            return mesh;
+        }
+
+        /// <summary>Balusters along each railing line with a handrail on top.</summary>
+        public static MeshData Railings(IEnumerable<StairData> stairs)
+        {
+            var mesh = new MeshData();
+            foreach (var railing in stairs.SelectMany(s => s.Railings))
+            {
+                var points = railing.Select(p => p.ToWorld()).ToList();
+                for (var i = 0; i + 1 < points.Count; i++)
+                {
+                    var (a, b) = (points[i], points[i + 1]);
+                    var flat = new Vector2(b.x - a.x, b.z - a.z).magnitude;
+                    var count = Mathf.Max(1, Mathf.CeilToInt(flat / BalusterSpacing));
+                    for (var k = 0; k < count; k++)
+                    {
+                        var foot = Vector3.Lerp(a, b, k / (float)count);
+                        mesh.AddBar(foot, foot + Vector3.up * RailHeight, BalusterSize);
+                    }
+                    mesh.AddBar(a + Vector3.up * RailHeight, b + Vector3.up * RailHeight, RailSize);
+                }
+                if (points.Count > 0)
+                    mesh.AddBar(points[^1], points[^1] + Vector3.up * RailHeight, BalusterSize);
+            }
+            return mesh;
+        }
+
+        public static MeshData Columns(IEnumerable<ColumnData> columns)
+        {
+            var mesh = new MeshData();
+            foreach (var column in columns)
+                mesh.AddBox(column.Position.ToWorld(column.Height / 2f), Quaternion.identity,
+                    new Vector3(column.Size, column.Height, column.Size));
+            return mesh;
+        }
+
+        /// <summary>The underside and edges of each floor slab, including the sides of its stair wells. Its top is the room floors.</summary>
+        public static MeshData Slabs(IEnumerable<SlabData> slabs)
+        {
+            var mesh = new MeshData();
+            foreach (var slab in slabs)
+            {
+                var outline = PolygonTriangulator.Oriented(Plan(slab.Outline), counterClockwise: true);
+                var holes = slab.Holes.Select(h => PolygonTriangulator.Oriented(Plan(h), counterClockwise: false)).ToList();
+                mesh.AddPolygon(outline, holes.Cast<IReadOnlyList<Vector2>>().ToList(), -slab.Thickness, faceUp: false);
+                foreach (var ring in holes.Prepend(outline))
+                {
+                    for (var i = 0; i < ring.Count; i++)
+                        mesh.AddSide(ring[i], ring[(i + 1) % ring.Count], -slab.Thickness, 0f);
+                }
+            }
+            return mesh;
+        }
 
         public static MeshData Roof(IEnumerable<RoomData> rooms, float wallHeight) =>
             Slabs(rooms, wallHeight + RoofLift);
@@ -76,9 +152,11 @@ namespace FloorPlanViz.Geometry
         {
             var mesh = new MeshData();
             foreach (var room in rooms)
-                mesh.AddPolygon(room.Polygon.Select(p => p.ToVector2()).ToList(), height, faceUp: true);
+                mesh.AddPolygon(Plan(room.Polygon), height, faceUp: true);
             return mesh;
         }
+
+        static List<Vector2> Plan(IEnumerable<PlanPoint> points) => points.Select(p => p.ToVector2()).ToList();
 
         static void AddWall(WallMeshes meshes, WallData wall)
         {

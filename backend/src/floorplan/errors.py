@@ -24,3 +24,8 @@ class PlanRejectedError(FloorPlanError):
 class LevelNotFoundError(FloorPlanError):
     def __init__(self, level: int):
         super().__init__(f"The plan has no level {level}.")
+
+
+class JobNotFoundError(FloorPlanError):
+    def __init__(self, job_id: str):
+        super().__init__(f"No job with id '{job_id}'.")

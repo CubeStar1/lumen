@@ -21,6 +21,8 @@ The phone connects to `http://<laptop-lan-ip>:8000`.
 |---|---|---|
 | `GET /health` | — | status and model name |
 | `POST /plans/parse` | multipart `image` | `PlanRecord` (the plan, saved) |
+| `POST /jobs` | multipart `kind` (`floor`, `sheet` or `photos`) and `images` | `202 Job` |
+| `GET /jobs/{id}` | — | `Job`: `state`, `stages`, `stage`, `progress`, `plan_id` or `error` |
 | `GET /plans` | — | `PlanSummary[]`, newest first |
 | `GET /plans/{id}` | — | `PlanRecord` |
 | `PATCH /plans/{id}` | `{ "name": "..." }` | `PlanRecord` |
@@ -36,11 +38,17 @@ A plan is a `BuildingSpec` of one or more levels, each holding a `FloorSpec` (ro
 openings, stairs, columns). Its geometry is a `BuildingGeometry` with one `LevelGeometry` per level.
 A single floor plan is a building with one level.
 
+Jobs run in the background (a building is several model calls). `sheet` reads one image holding
+every floor's plan; `photos` reads one image per floor (up to 8). Jobs live in memory; the plan
+they produce is saved like any other.
+
 ## Try a plan from the command line
 
 ```
 uv run try-plan samples/two_bedroom.png         # through the language model
 uv run try-plan samples/two_bedroom.spec.json   # skip the model, geometry only
+uv run try-plan samples/real/building_sheet.png --sheet   # a whole building on one sheet
+uv run try-plan ground.jpg first.jpg            # a photo per floor
 ```
 
 Writes `out/<name>.json` and a preview `out/<name>.png`.
@@ -68,6 +76,15 @@ uv run ruff check . && uv run ruff format --check .
    warnings.
 6. `geometry/build` converts every level to one shared world frame (+y up, centred on the building),
    decides exterior or interior from the rooms on each side of a wall, and attaches openings.
+7. `geometry/stairs` turns stairs into step blocks, landings and railings climbing to the next floor.
+   An `up` stair is paired with the `down` stair above it, which becomes a well cut out of that
+   floor's rooms and slab. Stairs cut off by the drawing keep ordinary risers; a few steps are only
+   marked on the floor.
+
+Buildings (`building.py`): one call lists a sheet's drawings with their boxes and rotation
+(`sheet.py`); each floor plan is cut from the full-resolution upload, turned upright and read in
+parallel. Floors are stacked lowest first, each shifted onto the one below (`geometry/align`: the
+shift whose outer walls land most on the walls below), and a terrace or roof level gets parapets.
 
 Specs with `derive_walls: true` (older plans and the hand-written sample) instead derive walls from
 room outlines, plus their extra stub and low walls.

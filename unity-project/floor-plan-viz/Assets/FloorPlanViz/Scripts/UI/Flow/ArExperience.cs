@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using FloorPlanViz.AR;
 using FloorPlanViz.Data;
 using FloorPlanViz.Model;
@@ -19,11 +20,15 @@ namespace FloorPlanViz.UI
         [SerializeField] ArHud hud;
 
         FloorPlanModel model;
+        int level;
 
         public event Action CloseRequested;
         public event Action EditRequested;
 
         public bool IsActive => model != null;
+
+        /// <summary>The index of the level picked in the HUD, as the backend numbers it.</summary>
+        public int SelectedLevel => model.Levels[level].Index;
 
         void Awake()
         {
@@ -43,6 +48,12 @@ namespace FloorPlanViz.UI
             };
             hud.ModeRequested += ToggleMode;
             hud.ResetRequested += () => viewMode.ShowTabletop(model);
+            hud.LevelSelected += SelectLevel;
+            hud.ExplodeToggled += exploded =>
+            {
+                model.Exploded = exploded;
+                RefreshToolbar();
+            };
         }
 
         void Update()
@@ -56,6 +67,8 @@ namespace FloorPlanViz.UI
             session.enabled = true;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             model = builder.Build(document.Plan.Geometry, null);
+            level = model.Levels.Count - 1;
+            hud.SetLevels(model.Levels.Select(l => Format.LevelLabel(l.Name)).ToList(), level);
             placement.Begin(model);
             hud.ShowPlacing(document.Name);
         }
@@ -77,11 +90,15 @@ namespace FloorPlanViz.UI
             var wasPlaced = placement.IsPlaced;
             var labelsVisible = model.LabelsVisible;
             var roofVisible = model.RoofVisible;
+            var exploded = model.Exploded;
             var local = (model.transform.localPosition, model.transform.localRotation, model.transform.localScale);
             Destroy(model.gameObject);
 
             model = builder.Build(plan.Geometry, parent);
             model.LabelsVisible = labelsVisible;
+            level = Mathf.Min(level, model.Levels.Count - 1);
+            model.VisibleUpTo = level;
+            hud.SetLevels(model.Levels.Select(l => Format.LevelLabel(l.Name)).ToList(), level);
             if (!wasPlaced)
             {
                 placement.Begin(model);
@@ -89,11 +106,12 @@ namespace FloorPlanViz.UI
             }
 
             if (viewMode.Mode == ViewMode.Walkthrough)
-                viewMode.ShowWalkthrough(model, placement.EstimateFloorHeight());
+                viewMode.ShowWalkthrough(model, placement.EstimateFloorHeight(), level);
             else
             {
                 viewMode.ShowTabletop(model, animate: false);
                 model.RoofVisible = roofVisible;
+                model.Exploded = exploded;
                 (model.transform.localPosition, model.transform.localRotation, model.transform.localScale) = local;
             }
             RefreshToolbar();
@@ -110,8 +128,9 @@ namespace FloorPlanViz.UI
         {
             if (viewMode.Mode == ViewMode.Tabletop)
             {
-                viewMode.ShowWalkthrough(model, placement.EstimateFloorHeight());
-                hud.SetHint("You're standing in the largest room. Walk around to explore.");
+                model.Exploded = false;
+                viewMode.ShowWalkthrough(model, placement.EstimateFloorHeight(), level);
+                hud.SetHint(WalkthroughHint());
             }
             else
             {
@@ -122,6 +141,22 @@ namespace FloorPlanViz.UI
             RefreshToolbar();
         }
 
-        void RefreshToolbar() => hud.ShowPlaced(viewMode.Mode, model.RoofVisible, model.LabelsVisible);
+        void SelectLevel(int index)
+        {
+            level = index;
+            model.VisibleUpTo = index;
+            if (viewMode.Mode == ViewMode.Walkthrough)
+            {
+                viewMode.ShowWalkthrough(model, placement.EstimateFloorHeight(), level);
+                hud.SetHint(WalkthroughHint());
+            }
+            RefreshToolbar();
+        }
+
+        string WalkthroughHint() => model.Levels.Count > 1
+            ? $"You're on the {model.Levels[level].Name.ToLowerInvariant()}, in its largest room."
+            : "You're standing in the largest room. Walk around to explore.";
+
+        void RefreshToolbar() => hud.ShowPlaced(viewMode.Mode, model.RoofVisible, model.LabelsVisible, model.Exploded);
     }
 }

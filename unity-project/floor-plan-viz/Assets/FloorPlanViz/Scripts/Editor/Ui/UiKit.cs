@@ -363,6 +363,37 @@ namespace FloorPlanViz.Editor
             return rect.gameObject.AddComponent<T>();
         }
 
+        /// <summary>A segmented control whose segments are made at runtime from a hidden template.</summary>
+        public static SegmentedControl Segmented(string name, Transform parent, bool vertical, bool onGlass)
+        {
+            var rect = Node(name, parent);
+            Fill(rect, onGlass ? Theme.Glass : Theme.Fill, vertical ? 24f : 9f).raycastTarget = true;
+            if (vertical)
+            {
+                Column(rect, Pad(4), 2f, TextAnchor.UpperCenter);
+                FitContent(rect, horizontal: true, vertical: true);
+            }
+            else
+            {
+                Row(rect, Pad(2), 2f, TextAnchor.MiddleCenter, expand: true);
+                Size(rect, height: 34f);
+            }
+
+            var segment = Node("Segment", rect);
+            Size(segment, width: vertical ? 76f : 0f, height: vertical ? 40f : 30f, flexibleWidth: vertical ? 0f : 1f);
+            var fill = Fill(segment, Color.clear, vertical ? 20f : 7f);
+            var button = Pressable(segment, fill, 0.8f);
+            var label = Label("Label", segment, "", TextStyle.Subhead, Theme.Label, TextAlignmentOptions.Center, wrap: false);
+            Stretch(label.rectTransform, 6f, 0f, 6f, 0f);
+            segment.gameObject.SetActive(false);
+
+            var control = rect.gameObject.AddComponent<SegmentedControl>();
+            SerializedWiring.Set(control, "track", rect);
+            SerializedWiring.Set(control, "segmentTemplate", button);
+            SerializedWiring.Set(control, "onGlass", onGlass);
+            return control;
+        }
+
         public static Image Circle(string name, Transform parent, float size, Color colour)
         {
             var rect = Node(name, parent);

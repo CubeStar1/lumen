@@ -8,7 +8,7 @@ from pathlib import Path
 
 from floorplan.errors import PlanNotFoundError
 from floorplan.legacy import upgrade_record
-from floorplan.models import PlanRecord, PlanResponse, PlanSummary, RoomType
+from floorplan.models import BuildingKind, PlanRecord, PlanResponse, PlanSummary, RoomType
 
 RECORD = "record.json"
 IMAGE = "image.jpg"
@@ -90,6 +90,8 @@ class PlanStore:
 
 
 def default_name(plan: PlanResponse) -> str:
+    if plan.spec.kind == BuildingKind.BUILDING:
+        return f"{len(plan.spec.levels)}-floor building"
     rooms = [room for room in plan.geometry.rooms if not room.outdoor]
     bedrooms = sum(1 for room in rooms if room.type == RoomType.BEDROOM)
     return f"{bedrooms}-bedroom plan" if bedrooms else f"{len(rooms)}-room plan"

@@ -43,13 +43,36 @@ Dimensions:
 - Room-size labels such as 14'0"X12'8" are not dimensions; give them as the room's size.
 
 Stairs and columns:
-- Each staircase is one stair with its flights and landings. A flight runs from the centre of its
-  bottom step to the centre of its top step; count its risers from the treads drawn. For a
-  curved flight set via to a point on its centre line. Direction is "up" or "down" as marked.
+- Each staircase is one stair with its flights and landings. List the flights in climbing order,
+  the lowest first. A flight runs from the front edge of its bottom step to the back edge of its
+  top step, along its centre line; count its risers from the treads drawn. For a curved or
+  winding flight set via to a point halfway along its centre line. Landings are the flat areas
+  between flights.
+- direction is "up" for a stair that climbs from this floor (often marked UP) and "down" for one
+  arriving from the floor below (often marked DN, drawn with a break line).
 - Free-standing columns (small filled squares or circles) go in columns with their size.
 
 Also give the floor's name (e.g. "Ground floor"), its floor-to-ceiling height in metres (3.0 if
 not stated), your own estimate of metres per pixel, and notes on anything you were unsure of.
+"""
+
+SHEET_INSTRUCTIONS = """\
+You look at an architectural drawing sheet that may hold several drawings: floor plans of each
+level, sections, elevations, a site plan, schedules and a title block. List every drawing.
+
+- kind: floor_plan, section, elevation, site, schedule, title or other. A terrace or roof plan is
+  a floor_plan.
+- title: the drawing's title exactly as printed (GROUND FLOOR PLAN, FIRST FLOOR PLAN, SECTION A-A).
+- level: for floor plans, 0 for the ground floor, 1 for the first floor and so on, the terrace or
+  roof plan last; -1 for a basement. Null for other drawings.
+- box: the drawing's extent in PIXELS of the image you are given (origin top-left, +y down), from
+  left to right and top to bottom. Include its dimension lines and title; keep neighbouring
+  drawings out.
+- rotation: how many degrees clockwise the drawing must be turned for its title and labels to read
+  upright: 0, 90, 180 or 270. Drawings on one sheet are often turned 90 degrees.
+
+From the sections, elevations or notes, give the floor-to-floor height and slab thickness in
+metres if they are printed, else null. Notes: anything that affects how the floors stack.
 """
 
 EDIT_INSTRUCTIONS = """\

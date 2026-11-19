@@ -1,7 +1,8 @@
 """Runs a floor plan through the pipeline and writes the response JSON and a preview PNG.
 
 Pass an image to go through the language model, or a *.spec.json file (a building spec, or a
-legacy single-floor spec) to skip it.
+legacy single-floor spec) to skip it. `--sheet` reads one image as a sheet of a whole building's
+plans; several images are read as one photo per floor.
 """
 
 import argparse
@@ -9,6 +10,7 @@ import json
 import sys
 from pathlib import Path
 
+from floorplan.building import BuildingReader
 from floorplan.config import get_settings
 from floorplan.imaging import load_image, prepare
 from floorplan.legacy import upgrade_spec
@@ -20,20 +22,27 @@ from floorplan.service import from_spec
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("input", type=Path, help="floor plan image or *.spec.json")
+    parser.add_argument("inputs", type=Path, nargs="+", help="plan image(s) or *.spec.json")
+    parser.add_argument("--sheet", action="store_true", help="the image holds every floor's plan")
     parser.add_argument("--out", type=Path, default=Path("out"))
     args = parser.parse_args()
     sys.stdout.reconfigure(errors="replace")
 
-    is_spec = args.input.suffix == ".json"
-    response = _from_spec(args.input) if is_spec else _from_image(args.input)
-    name = args.input.name.split(".")[0]
+    first = args.inputs[0]
+    is_spec = first.suffix == ".json"
+    if is_spec:
+        response = _from_spec(first)
+    elif args.sheet or len(args.inputs) > 1:
+        response = _building(args.inputs, args.sheet)
+    else:
+        response = _from_image(first)
+    name = first.name.split(".")[0]
 
     args.out.mkdir(parents=True, exist_ok=True)
     json_path = args.out / f"{name}.json"
     png_path = args.out / f"{name}.png"
     json_path.write_text(response.model_dump_json(indent=2), encoding="utf-8")
-    render(response.geometry, png_path, source=None if is_spec else args.input)
+    render(response.geometry, png_path, source=None if is_spec else first)
 
     for level in response.geometry.levels:
         print(f"{level.name}: {len(level.rooms)} rooms, {len(level.walls)} walls")
@@ -47,6 +56,24 @@ def main() -> None:
 def _from_image(path: Path) -> PlanResponse:
     image = prepare(load_image(path.read_bytes()), get_settings().max_image_side)
     return get_service().parse(image)
+
+
+def _building(paths: list[Path], sheet: bool) -> PlanResponse:
+    reader = BuildingReader(get_service(), get_settings().max_image_side)
+    images = [load_image(path.read_bytes()) for path in paths]
+    progress = _Printer()
+    return reader.from_sheet(images[0], progress) if sheet else reader.from_photos(images, progress)
+
+
+class _Printer:
+    def plan(self, stages: list[str]) -> None:
+        pass
+
+    def start(self, stage: str) -> None:
+        print(f"... {stage}")
+
+    def finish(self, stage: str) -> None:
+        print(f"done {stage}")
 
 
 def _from_spec(path: Path) -> PlanResponse:

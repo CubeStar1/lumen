@@ -10,12 +10,15 @@ from floorplan.geometry.layout import complete
 from floorplan.imaging import PreparedImage
 from floorplan.llm.client import Feedback
 from floorplan.models import BuildingKind, BuildingSpec, FloorSpec, LevelSpec, PlanResponse
+from floorplan.sheet import SheetReading
 
 
 class PlanModel(Protocol):
     def extract(
-        self, image: PreparedImage, feedback: Feedback | None = None
+        self, image: PreparedImage, feedback: Feedback | None = None, hint: str | None = None
     ) -> FloorExtraction: ...
+
+    def read_sheet(self, image: PreparedImage) -> SheetReading: ...
 
     def edit(
         self, floor: FloorSpec, instruction: str, feedback: Feedback | None = None
@@ -26,11 +29,21 @@ class PlanService:
     def __init__(self, model: PlanModel):
         self._model = model
 
+    @property
+    def model(self) -> PlanModel:
+        return self._model
+
     def parse(self, image: PreparedImage) -> PlanResponse:
+        floor, warnings = self.read_floor(image)
+        return assemble(single_floor(floor), warnings)
+
+    def read_floor(
+        self, image: PreparedImage, hint: str | None = None
+    ) -> tuple[FloorSpec, list[str]]:
         floor, report = self._resolve(
-            lambda feedback: self._model.extract(image, feedback), to_floor
+            lambda feedback: self._model.extract(image, feedback, hint), to_floor
         )
-        return _assemble(single_floor(floor), report.warnings)
+        return floor, report.warnings
 
     def edit(self, spec: BuildingSpec, instruction: str, level: int = 0) -> PlanResponse:
         target = _level(spec, level)
@@ -41,7 +54,7 @@ class PlanService:
         levels = [
             lv.model_copy(update={"floor": floor}) if lv is target else lv for lv in spec.levels
         ]
-        return _assemble(spec.model_copy(update={"levels": levels}), report.warnings)
+        return assemble(spec.model_copy(update={"levels": levels}), report.warnings)
 
     def _resolve[A: BaseModel](
         self, ask: Callable[[Feedback | None], A], convert: Callable[[A], FloorSpec]
@@ -71,7 +84,7 @@ def from_spec(spec: BuildingSpec) -> PlanResponse:
             raise PlanRejectedError(report.errors)
         levels.append(level.model_copy(update={"floor": floor}))
         warnings += report.warnings
-    return _assemble(spec.model_copy(update={"levels": levels}), warnings)
+    return assemble(spec.model_copy(update={"levels": levels}), warnings)
 
 
 def _level(spec: BuildingSpec, index: int) -> LevelSpec:
@@ -88,6 +101,6 @@ def _prepare(floor: FloorSpec) -> tuple[FloorSpec, ValidationReport]:
     return cleaned, report
 
 
-def _assemble(spec: BuildingSpec, warnings: list[str]) -> PlanResponse:
+def assemble(spec: BuildingSpec, warnings: list[str]) -> PlanResponse:
     geometry, build_warnings = build_building(spec)
     return PlanResponse(spec=spec, geometry=geometry, warnings=warnings + build_warnings)

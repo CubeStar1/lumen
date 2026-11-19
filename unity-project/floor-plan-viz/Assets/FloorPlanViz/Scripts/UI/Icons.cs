@@ -20,6 +20,7 @@ namespace FloorPlanViz.UI
         public const string DoorFront = "";
         public const string Error = "";
         public const string Kitchen = "";
+        public const string Layers = "";
         public const string Label = "";
         public const string Laundry = "";
         public const string MoreHoriz = "";

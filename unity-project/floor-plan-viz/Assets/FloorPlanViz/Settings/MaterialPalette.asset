@@ -20,6 +20,10 @@ MonoBehaviour:
   roof: {fileID: 2100000, guid: ebd6b7ae38354c74c9cd31a9ba3c7e25, type: 2}
   baseBoard: {fileID: 2100000, guid: d8bfc9de017eae64ca957f7e7a11f682, type: 2}
   shadowCatcher: {fileID: 2100000, guid: e96bc3e23a8e101429a429409f75e253, type: 2}
+  stair: {fileID: 2100000, guid: f0b36b2a59eae154fb76438540e15b10, type: 2}
+  railing: {fileID: 2100000, guid: 08b638f58e2bb6b468ea04d637654e79, type: 2}
+  slab: {fileID: 2100000, guid: 41e4bd208e7d4dd438544dd4ecd075dd, type: 2}
+  column: {fileID: 2100000, guid: cf82ffc12abddda41981f7d9fc4777b6, type: 2}
   defaultFloor: {fileID: 2100000, guid: 282188d13d5e5dd4ea272570365c528c, type: 2}
   floors:
   - type: 0

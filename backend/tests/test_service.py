@@ -13,13 +13,19 @@ IMAGE = PreparedImage("data:", 800, 400)
 class ScriptedModel:
     """Answers extractions from a script; edits return the plan unchanged."""
 
-    def __init__(self, *answers):
+    def __init__(self, *answers, sheet=None):
         self.answers = list(answers)
+        self.sheet = sheet
         self.feedback: list[Feedback | None] = []
+        self.hints: list[str | None] = []
 
-    def extract(self, image: PreparedImage, feedback: Feedback | None = None):
+    def extract(self, image: PreparedImage, feedback: Feedback | None = None, hint=None):
         self.feedback.append(feedback)
+        self.hints.append(hint)
         return self.answers.pop(0) if len(self.answers) > 1 else self.answers[0]
+
+    def read_sheet(self, image: PreparedImage):
+        return self.sheet
 
     def edit(
         self, floor: FloorSpec, instruction: str, feedback: Feedback | None = None

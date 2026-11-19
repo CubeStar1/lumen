@@ -7,8 +7,14 @@ from pydantic import BaseModel
 from floorplan.errors import ModelError
 from floorplan.extraction import FloorExtraction
 from floorplan.imaging import PreparedImage
-from floorplan.llm.prompts import EDIT_INSTRUCTIONS, EXTRACT_INSTRUCTIONS, REPAIR_TEMPLATE
+from floorplan.llm.prompts import (
+    EDIT_INSTRUCTIONS,
+    EXTRACT_INSTRUCTIONS,
+    REPAIR_TEMPLATE,
+    SHEET_INSTRUCTIONS,
+)
 from floorplan.models import FloorSpec
+from floorplan.sheet import SheetReading
 
 
 @dataclass(frozen=True)
@@ -29,13 +35,24 @@ class OpenAIPlanModel:
         self._model = model
         self._reasoning = {"effort": reasoning_effort} if reasoning_effort else openai.omit
 
-    def extract(self, image: PreparedImage, feedback: Feedback | None = None) -> FloorExtraction:
+    def extract(
+        self, image: PreparedImage, feedback: Feedback | None = None, hint: str | None = None
+    ) -> FloorExtraction:
         size = f"The image is {image.width} x {image.height} pixels."
+        context = f" {hint}" if hint else ""
         content: list[ResponseInputContentParam] = [
-            {"type": "input_text", "text": f"Read this floor plan. {size}"},
+            {"type": "input_text", "text": f"Read this floor plan. {size}{context}"},
             {"type": "input_image", "image_url": image.url, "detail": "high"},
         ]
         return self._parse(EXTRACT_INSTRUCTIONS, content, feedback, FloorExtraction)
+
+    def read_sheet(self, image: PreparedImage) -> SheetReading:
+        size = f"The image is {image.width} x {image.height} pixels."
+        content: list[ResponseInputContentParam] = [
+            {"type": "input_text", "text": f"List the drawings on this sheet. {size}"},
+            {"type": "input_image", "image_url": image.url, "detail": "high"},
+        ]
+        return self._parse(SHEET_INSTRUCTIONS, content, None, SheetReading)
 
     def edit(
         self, floor: FloorSpec, instruction: str, feedback: Feedback | None = None

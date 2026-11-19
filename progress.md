@@ -14,7 +14,7 @@ the OpenCV wall refinement waits for the eval; single floor (V0–V5) ships befo
 - `two_bedroom` (synthetic, exact) and `ground_floor_imperial` (the user's ft-in plan, hand-traced);
 - `indian_30x35` and `bungalow_2bhk` (Commons, traced from printed dimensions);
 - `curved_stair_first_floor` (approximate: no dimensions, textured render, curved stair, angled bay);
-- `angled_sketch` (coarse: low-res hand sketch with two angled wings).
+- (`angled_sketch` was dropped on 2026-11-19: too low-resolution to trace reliably.)
 `backend/eval/buildings/somerville_four_floors` is kept for V6. Sources and licences: `backend/eval/ATTRIBUTION.md`.
 
 **Model comparison (2026-11-19, v1 pipeline, 2 runs per case, mean over 6 cases):**
@@ -46,6 +46,27 @@ stair type), which V1–V4 address. Runs: `eval/runs/cmp-*`.
   floor (13 rooms incl. 2 outdoor, 31 openings, 1 stair, 3 columns) rendered correctly in `PlanDebug`.
 - Still v1 behaviour: walls come from room edges, so open-plan boundaries (dining hall / stair hall) still get
   walls. That is V2.
+
+**V2 wall graph: done (2026-11-19).**
+- `geometry/orient.py`: dominant wall directions from a length-weighted angle histogram (near-axis peaks squared
+  to 0/90°, near-perpendicular pairs squared to each other); every room edge and wall is fitted onto a shared line.
+  `normalize` rebuilds room corners as intersections of consecutive edge lines, so angled walls keep their angle
+  (the old global x/y clustering forced everything onto the axes) and shared angled edges coincide exactly.
+- `geometry/wallgraph.py`: loose walls are joined to the graph (duplicates of existing walls dropped, nearby
+  endpoints merged, dangling ends extended or trimmed onto the wall they almost touch); used for extra walls now,
+  for every wall from V3.
+- `geometry/regions.py` (rooms as faces of the wall graph, label assignment, open-plan faces with several labels,
+  fallbacks, exterior sides) and `geometry/scale.py` (ft-in / m / cm / mm parsing, bare-number unit guess, median
+  scale with outlier report) are built and tested, and get wired in with the V3 prompt.
+- `derive_walls` now groups edges onto lines by tolerance, not by exact rounded keys.
+- Eval runs now save the model's raw answers (`runs/<run>/raw/`); `uv run eval --rebuild <run>` reruns them through
+  the current geometry for free.
+- 72 backend tests pass.
+
+Eval (`v2-sol`, gpt-6.2-sol, 2 runs, mean over 6 cases) vs V1 (`v1-contract-sol`): wall F1 0.73 → **0.78**,
+room IoU 0.76 → 0.76, opening recall 0.82 → **0.91**, opening position error 0.07 → **0.04 m**. Ground floor wall
+F1 0.61 → 0.96 (its V1 dip was a 4% scale miss in one run, so part of this is run-to-run variance). The angled
+sketch scores 0.16 even though its wings are now correctly angled: the coarse reference is the limit there.
 
 ## Where things stand
 

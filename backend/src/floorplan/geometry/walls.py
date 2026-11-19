@@ -13,8 +13,8 @@ from floorplan.geometry.vec import Vec, add, dot, edges, normalized, scale, sub
 from floorplan.models import RoomSpec
 
 MIN_SEGMENT = 0.02
-
-LineKey = tuple[float, float, float]
+SAME_DIRECTION = 1e-3
+SAME_OFFSET = 0.01
 
 
 @dataclass(frozen=True)
@@ -23,9 +23,12 @@ class Line:
     normal: Vec
     offset: float
 
-    @property
-    def key(self) -> LineKey:
-        return (round(self.direction[0], 3), round(self.direction[1], 3), round(self.offset, 3))
+    def matches(self, other: "Line") -> bool:
+        return (
+            abs(self.direction[0] - other.direction[0]) < SAME_DIRECTION
+            and abs(self.direction[1] - other.direction[1]) < SAME_DIRECTION
+            and abs(self.offset - other.offset) < SAME_OFFSET
+        )
 
     def at(self, t: float) -> Vec:
         return add(scale(self.normal, self.offset), scale(self.direction, t))
@@ -47,19 +50,27 @@ class _Interval:
 
 
 def derive_walls(rooms: list[RoomSpec]) -> list[WallSegment]:
-    lines: dict[LineKey, Line] = {}
-    intervals: dict[LineKey, list[_Interval]] = defaultdict(list)
+    lines: list[Line] = []
+    intervals: dict[int, list[_Interval]] = defaultdict(list)
 
     for room in rooms:
         for a, b in edges(room.polygon):
             if a == b:
                 continue
-            line = _line_through(a, b)
-            line = lines.setdefault(line.key, line)
+            index = _find_or_add(lines, _line_through(a, b))
+            line = lines[index]
             t0, t1 = sorted((dot(a, line.direction), dot(b, line.direction)))
-            intervals[line.key].append(_Interval(t0, t1, room.id))
+            intervals[index].append(_Interval(t0, t1, room.id))
 
-    return [segment for key, line in lines.items() for segment in _sweep(line, intervals[key])]
+    return [segment for i, line in enumerate(lines) for segment in _sweep(line, intervals[i])]
+
+
+def _find_or_add(lines: list[Line], line: Line) -> int:
+    for index, existing in enumerate(lines):
+        if existing.matches(line):
+            return index
+    lines.append(line)
+    return len(lines) - 1
 
 
 def _line_through(a: Vec, b: Vec) -> Line:

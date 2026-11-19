@@ -3,6 +3,7 @@ from shapely.geometry import Polygon
 from floorplan.geometry.frame import Frame, building_frame, to_world
 from floorplan.geometry.openings import attach_openings
 from floorplan.geometry.vec import point
+from floorplan.geometry.wallgraph import connect
 from floorplan.geometry.walls import derive_walls
 from floorplan.models import (
     Bounds,
@@ -61,8 +62,9 @@ def build_level(level: LevelSpec, frame: Frame) -> tuple[LevelGeometry, list[str
         walls.append(wall)
         wall_rooms[wall.id] = segment.rooms
 
-    for spec in floor.walls:
-        wall = _extra_wall(spec, f"w{len(walls) + 1}", floor.height)
+    extras = [_extra_wall(spec, spec.id, floor.height) for spec in floor.walls]
+    for wall in connect(walls, extras):
+        wall = wall.model_copy(update={"id": f"w{len(walls) + 1}"})
         walls.append(wall)
         wall_rooms[wall.id] = frozenset()
 

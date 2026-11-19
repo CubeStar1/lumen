@@ -56,10 +56,15 @@ uv run ruff check . && uv run ruff format --check .
 
 1. `llm/` asks the model for a `FloorSpec`: rooms (indoor or outdoor), extra walls, openings, stairs
    and columns in metres (image convention, +y down).
-2. `geometry/normalize` snaps coordinates so shared walls line up exactly.
+2. `geometry/normalize` fits every room edge and wall onto shared lines (`geometry/orient` finds the
+   plan's dominant directions), so shared walls coincide exactly and angled walls keep their angle.
 3. `geometry/validate` reports errors (retried once with feedback) and warnings.
 4. `geometry/build` converts every level to one shared world frame (+y up, centred on the whole
-   building), derives walls from indoor room edges, adds the extra walls and attaches openings.
+   building), derives walls from indoor room edges, joins the extra walls onto them
+   (`geometry/wallgraph`) and attaches openings.
+
+`geometry/regions` (rooms as faces of the wall graph) and `geometry/scale` (scale from printed
+dimensions) are the building blocks for wall-first extraction (PLAN_V2 V3).
 
 ## Evaluate
 
@@ -67,6 +72,7 @@ uv run ruff check . && uv run ruff format --check .
 uv run eval --repeat 2                  # all cases in eval/cases, mean of 2 parses each
 uv run eval bungalow_2bhk --model gpt-6-luna
 uv run eval --rescore <run>             # rescore saved predictions without calling the model
+uv run eval --rebuild <run>             # rerun saved raw model answers through the current geometry
 ```
 
 `eval/` holds the hand-traced references and run outputs. It is kept locally and not committed.

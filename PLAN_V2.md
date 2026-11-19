@@ -316,7 +316,7 @@ There's no way to know whether a prompt change helps without a baseline. Add `ba
 |---|---|---|
 | V0 ✅ | Eval harness + labelled set | `uv run eval` scores v1 on 6+ plans, table saved |
 | V1 ✅ | Contract v2 + migration | `FloorSpec` / `BuildingSpec` / `BuildingGeometry` models; v1 records and the sample load as one-level buildings; all v1 tests still pass |
-| V2 | Wall graph + regions | `orient`, `wallgraph`, `regions`, `scale` with unit tests (L-shape, 45° bay, stub wall, open-plan two-label face, porch, parallel walls 0.12 m apart, ft-in parsing) |
+| V2 ✅ | Wall graph + regions | `orient`, `wallgraph`, `regions`, `scale` with unit tests (L-shape, 45° bay, stub wall, open-plan two-label face, porch, parallel walls 0.12 m apart, ft-in parsing) |
 | V3 | v2 floor extraction | New prompts with pixel coordinates; eval beats v1 on wall F1 and room IoU on the real ground-floor plan |
 | V4 | Stairs (single floor) | Straight, L, U and curved flights → steps, landings, railings; debug renders correct |
 | V5 | Unity levels + stairs | `BuildingBuilder`, slab holes, stairs, columns, parapets; `PlanDebug` shows the real ground-floor plan correctly |

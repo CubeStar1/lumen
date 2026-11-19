@@ -3,7 +3,8 @@
 Each case is a folder in eval/cases/ with reference.json and image.png (or .jpg). A run writes
 the raw predictions, overlays, scores.json and report.md to eval/runs/<name>/. Model output varies
 between calls, so --repeat N parses every case N times and reports the mean. Pass --rescore with an
-earlier run's name to score its saved predictions again without calling the model.
+earlier run's name to score its saved predictions again without calling the model, or --rebuild to
+run the model's saved raw answers through the current geometry pipeline first.
 """
 
 import argparse
@@ -20,8 +21,9 @@ from floorplan.evaluation.reference import load_reference
 from floorplan.evaluation.report import markdown, overlay
 from floorplan.evaluation.snapshot import from_geometry, from_reference
 from floorplan.imaging import load_image, to_data_url
-from floorplan.main import get_service
-from floorplan.models import PlanResponse
+from floorplan.main import get_service, plan_model
+from floorplan.models import FloorSpec, PlanResponse
+from floorplan.service import PlanService, from_spec, single_floor
 
 IMAGE_NAMES = ("image.png", "image.jpg", "image.jpeg")
 PARALLEL_CALLS = 6
@@ -35,6 +37,9 @@ def main() -> None:
     parser.add_argument("--root", type=Path, default=Path("eval"))
     parser.add_argument("--name", help="run name (default: timestamp)")
     parser.add_argument("--rescore", metavar="RUN", help="reuse the predictions of an earlier run")
+    parser.add_argument(
+        "--rebuild", metavar="RUN", help="rebuild an earlier run's raw answers with this pipeline"
+    )
     parser.add_argument("--repeat", type=int, default=1, help="parses per case (default: 1)")
     parser.add_argument("--model", help="override OPENAI_MODEL")
     parser.add_argument("--effort", help="override OPENAI_REASONING_EFFORT")
@@ -52,6 +57,9 @@ def main() -> None:
     if args.rescore:
         source = args.root / "runs" / args.rescore / "predictions"
         predictions = {name: _load_all(source, name) for name in cases}
+    elif args.rebuild:
+        source = args.root / "runs" / args.rebuild / "raw"
+        predictions = {name: _rebuild_all(source, name) for name in cases}
     else:
         predictions = _predict(cases, predictions_dir, args.repeat)
 
@@ -101,13 +109,37 @@ def _override_settings(model: str | None, effort: str | None) -> None:
     get_service.cache_clear()
 
 
+class _Recorder:
+    """Wraps the model and keeps its last raw answer, before any geometry clean-up."""
+
+    def __init__(self, model):
+        self._model = model
+        self.answer: FloorSpec | None = None
+
+    def extract(self, image_url: str, feedback=None) -> FloorSpec:
+        self.answer = self._model.extract(image_url, feedback)
+        return self.answer
+
+    def edit(self, floor: FloorSpec, instruction: str, feedback=None) -> FloorSpec:
+        raise NotImplementedError
+
+
 def _predict(cases: dict[str, Path], output: Path, repeat: int) -> dict[str, list[Prediction]]:
+    raw = output.parent / "raw"
+    raw.mkdir(exist_ok=True)
+
     def run(job: tuple[str, Path, int]) -> tuple[str, Prediction]:
         name, folder, index = job
+        recorder = _Recorder(plan_model(get_settings()))
         try:
-            response = get_service().parse(_image_url(folder))
+            response = PlanService(recorder).parse(_image_url(folder))
         except (ModelError, PlanRejectedError) as exc:
             return name, str(exc)
+        finally:
+            if recorder.answer is not None:
+                (raw / f"{name}.{index}.json").write_text(
+                    recorder.answer.model_dump_json(indent=2), encoding="utf-8"
+                )
         path = output / f"{name}.{index}.json"
         path.write_text(response.model_dump_json(indent=2), encoding="utf-8")
         return name, response
@@ -123,6 +155,17 @@ def _predict(cases: dict[str, Path], output: Path, repeat: int) -> dict[str, lis
 def _image_url(folder: Path) -> str:
     image = next(folder / n for n in IMAGE_NAMES if (folder / n).exists())
     return to_data_url(load_image(image.read_bytes()), get_settings().max_image_side)
+
+
+def _rebuild_all(folder: Path, name: str) -> list[Prediction]:
+    results: list[Prediction] = []
+    for path in sorted(folder.glob(f"{name}.*.json")):
+        floor = FloorSpec.model_validate_json(path.read_text(encoding="utf-8"))
+        try:
+            results.append(from_spec(single_floor(floor)))
+        except PlanRejectedError as exc:
+            results.append(str(exc))
+    return results
 
 
 def _load_all(folder: Path, name: str) -> list[Prediction]:

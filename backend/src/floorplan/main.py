@@ -29,12 +29,14 @@ from floorplan.store import PlanStore
 app = FastAPI(title="Floor Plan API")
 
 
+def plan_model(settings: Settings) -> OpenAIPlanModel:
+    client = openai.OpenAI(api_key=settings.openai_api_key.get_secret_value())
+    return OpenAIPlanModel(client, settings.openai_model, settings.openai_reasoning_effort)
+
+
 @lru_cache
 def get_service() -> PlanService:
-    settings = get_settings()
-    client = openai.OpenAI(api_key=settings.openai_api_key.get_secret_value())
-    model = OpenAIPlanModel(client, settings.openai_model, settings.openai_reasoning_effort)
-    return PlanService(model)
+    return PlanService(plan_model(get_settings()))
 
 
 @lru_cache

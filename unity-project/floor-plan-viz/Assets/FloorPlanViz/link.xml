@@ -1,0 +1,5 @@
+<linker>
+    <!-- Plan DTOs are created by Newtonsoft through reflection. -->
+    <assembly fullname="FloorPlanViz.Core" preserve="all" />
+    <assembly fullname="FloorPlanViz.Runtime" preserve="all" />
+</linker>

@@ -1,0 +1,7 @@
+{
+    "name": "FloorPlanViz.Core",
+    "rootNamespace": "FloorPlanViz",
+    "references": [],
+    "autoReferenced": true,
+    "noEngineReferences": false
+}

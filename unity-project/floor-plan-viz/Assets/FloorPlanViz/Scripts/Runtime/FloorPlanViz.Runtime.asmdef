@@ -1,0 +1,15 @@
+{
+    "name": "FloorPlanViz.Runtime",
+    "rootNamespace": "FloorPlanViz",
+    "references": [
+        "FloorPlanViz.Core",
+        "Unity.TextMeshPro",
+        "Unity.InputSystem"
+    ],
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Newtonsoft.Json.dll"
+    ],
+    "autoReferenced": true,
+    "noEngineReferences": false
+}

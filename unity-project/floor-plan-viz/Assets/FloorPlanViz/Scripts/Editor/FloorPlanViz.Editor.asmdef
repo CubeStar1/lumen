@@ -1,0 +1,24 @@
+{
+    "name": "FloorPlanViz.Editor",
+    "rootNamespace": "FloorPlanViz.Editor",
+    "references": [
+        "FloorPlanViz.Core",
+        "FloorPlanViz.Runtime",
+        "FloorPlanViz.AR",
+        "FloorPlanViz.UI",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI",
+        "Unity.InputSystem",
+        "Unity.XR.ARFoundation",
+        "Unity.XR.ARSubsystems",
+        "Unity.XR.CoreUtils",
+        "Unity.XR.Management",
+        "Unity.XR.Management.Editor",
+        "Unity.RenderPipelines.Universal.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "autoReferenced": false,
+    "noEngineReferences": false
+}

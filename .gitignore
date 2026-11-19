@@ -1,1 +1,65 @@
-unity-project
+# Unity generated
+unity-project/*/[Ll]ibrary/
+unity-project/*/[Tt]emp/
+unity-project/*/[Oo]bj/
+unity-project/*/[Bb]uild/
+unity-project/*/[Bb]uilds/
+unity-project/*/[Ll]ogs/
+unity-project/*/[Uu]ser[Ss]ettings/
+unity-project/*/[Mm]emory[Cc]aptures/
+unity-project/*/[Rr]ecordings/
+unity-project/*/Assets/AssetStoreTools*
+unity-project/*/Assets/Plugins/PlasticSCM*
+unity-project/*/Assets/AddressableAssetsData/*/*.bin*
+unity-project/*/Assets/StreamingAssets/aa.meta
+unity-project/*/Assets/StreamingAssets/aa/*
+unity-project/*/UpgradeLog*.htm
+unity-project/*/ExportedObj/
+
+# Plastic SCM
+.plastic/
+ignore.conf
+
+# IDE / solution files
+.vs/
+.vscode/
+.idea/
+.gradle/
+.consulo/
+*.csproj
+*.unityproj
+*.sln
+*.slnx
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# Build artifacts
+*.apk
+*.aab
+*.ipa
+*.app
+*.unitypackage
+*.unitypackage.meta
+sysinfo.txt
+crashlytics-build.properties
+mono_crash.*
+
+# Private / OS
+*.private
+*.private.meta
+~UnityDirMonSyncFile~*
+.DS_Store
+Thumbs.db
+Desktop.ini

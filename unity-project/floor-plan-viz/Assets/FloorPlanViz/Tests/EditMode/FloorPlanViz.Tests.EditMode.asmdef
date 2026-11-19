@@ -1,0 +1,21 @@
+{
+    "name": "FloorPlanViz.Tests.EditMode",
+    "rootNamespace": "FloorPlanViz.Tests",
+    "references": [
+        "FloorPlanViz.Core",
+        "FloorPlanViz.Runtime",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ]
+}

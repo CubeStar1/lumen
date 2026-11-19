@@ -1,0 +1,15 @@
+{
+    "name": "FloorPlanViz.UI",
+    "rootNamespace": "FloorPlanViz",
+    "references": [
+        "FloorPlanViz.Core",
+        "FloorPlanViz.Runtime",
+        "FloorPlanViz.AR",
+        "UnityEngine.UI",
+        "Unity.TextMeshPro",
+        "NativeGallery.Runtime",
+        "Unity.XR.ARFoundation"
+    ],
+    "autoReferenced": true,
+    "noEngineReferences": false
+}

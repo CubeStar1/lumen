@@ -1,0 +1,15 @@
+{
+    "name": "FloorPlanViz.AR",
+    "rootNamespace": "FloorPlanViz",
+    "references": [
+        "FloorPlanViz.Core",
+        "FloorPlanViz.Runtime",
+        "Unity.XR.ARFoundation",
+        "Unity.XR.ARSubsystems",
+        "Unity.XR.CoreUtils",
+        "Unity.InputSystem",
+        "UnityEngine.UI"
+    ],
+    "autoReferenced": true,
+    "noEngineReferences": false
+}

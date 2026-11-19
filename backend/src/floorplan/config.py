@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     openai_api_key: SecretStr
-    openai_model: str = "gpt-5.6-luna"
+    openai_model: str = "gpt-6.2-sol"
     openai_reasoning_effort: str | None = None
     max_image_side: int = 2048
     max_upload_bytes: int = 15 * 1024 * 1024

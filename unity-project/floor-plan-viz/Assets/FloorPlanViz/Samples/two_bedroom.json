@@ -1,341 +1,367 @@
 {
   "spec": {
-    "wall_height": 3.0,
-    "rooms": [
+    "kind": "floor",
+    "levels": [
       {
-        "id": "r1",
-        "name": "Living Room",
-        "type": "living",
-        "polygon": [
-          {
-            "x": 0.0,
-            "y": 0.0
-          },
-          {
-            "x": 5.0,
-            "y": 0.0
-          },
-          {
-            "x": 5.0,
-            "y": 5.0
-          },
-          {
-            "x": 0.0,
-            "y": 5.0
-          }
-        ]
-      },
-      {
-        "id": "r2",
-        "name": "Kitchen",
-        "type": "kitchen",
-        "polygon": [
-          {
-            "x": 5.0,
-            "y": 0.0
-          },
-          {
-            "x": 8.0,
-            "y": 0.0
-          },
-          {
-            "x": 8.0,
-            "y": 3.0
-          },
-          {
-            "x": 5.0,
-            "y": 3.0
-          }
-        ]
-      },
-      {
-        "id": "r3",
-        "name": "Dining",
-        "type": "dining",
-        "polygon": [
-          {
-            "x": 8.0,
-            "y": 0.0
-          },
-          {
-            "x": 10.0,
-            "y": 0.0
-          },
-          {
-            "x": 10.0,
-            "y": 3.0
-          },
-          {
-            "x": 8.0,
-            "y": 3.0
-          }
-        ]
-      },
-      {
-        "id": "r4",
-        "name": "Hallway",
-        "type": "hallway",
-        "polygon": [
-          {
-            "x": 5.0,
-            "y": 3.0
-          },
-          {
-            "x": 10.0,
-            "y": 3.0
-          },
-          {
-            "x": 10.0,
-            "y": 4.5
-          },
-          {
-            "x": 5.0,
-            "y": 4.5
-          }
-        ]
-      },
-      {
-        "id": "r5",
-        "name": "Bathroom",
-        "type": "bathroom",
-        "polygon": [
-          {
-            "x": 5.0,
-            "y": 4.5
-          },
-          {
-            "x": 7.0,
-            "y": 4.5
-          },
-          {
-            "x": 7.0,
-            "y": 8.0
-          },
-          {
-            "x": 5.0,
-            "y": 8.0
-          }
-        ]
-      },
-      {
-        "id": "r6",
-        "name": "Bedroom 1",
-        "type": "bedroom",
-        "polygon": [
-          {
-            "x": 7.0,
-            "y": 4.5
-          },
-          {
-            "x": 10.0,
-            "y": 4.5
-          },
-          {
-            "x": 10.0,
-            "y": 8.0
-          },
-          {
-            "x": 7.0,
-            "y": 8.0
-          }
-        ]
-      },
-      {
-        "id": "r7",
-        "name": "Bedroom 2",
-        "type": "bedroom",
-        "polygon": [
-          {
-            "x": 0.0,
-            "y": 5.0
-          },
-          {
-            "x": 5.0,
-            "y": 5.0
-          },
-          {
-            "x": 5.0,
-            "y": 8.0
-          },
-          {
-            "x": 0.0,
-            "y": 8.0
-          }
-        ]
-      }
-    ],
-    "openings": [
-      {
-        "id": "o1",
-        "type": "door",
-        "rooms": [
-          "r1",
-          "exterior"
-        ],
-        "position": {
+        "index": 0,
+        "elevation": 0.0,
+        "slab": 0.15,
+        "offset": {
           "x": 0.0,
-          "y": 2.5
-        },
-        "width": 1.0
-      },
-      {
-        "id": "o2",
-        "type": "window",
-        "rooms": [
-          "r1",
-          "exterior"
-        ],
-        "position": {
-          "x": 2.5,
           "y": 0.0
         },
-        "width": 1.8
-      },
-      {
-        "id": "o3",
-        "type": "door",
-        "rooms": [
-          "r1",
-          "r4"
-        ],
-        "position": {
-          "x": 5.0,
-          "y": 3.75
-        },
-        "width": 0.9
-      },
-      {
-        "id": "o4",
-        "type": "door",
-        "rooms": [
-          "r2",
-          "r4"
-        ],
-        "position": {
-          "x": 6.5,
-          "y": 3.0
-        },
-        "width": 0.9
-      },
-      {
-        "id": "o5",
-        "type": "door",
-        "rooms": [
-          "r2",
-          "r3"
-        ],
-        "position": {
-          "x": 8.0,
-          "y": 1.5
-        },
-        "width": 1.2
-      },
-      {
-        "id": "o6",
-        "type": "window",
-        "rooms": [
-          "r2",
-          "exterior"
-        ],
-        "position": {
-          "x": 6.5,
-          "y": 0.0
-        },
-        "width": 1.2
-      },
-      {
-        "id": "o7",
-        "type": "window",
-        "rooms": [
-          "r3",
-          "exterior"
-        ],
-        "position": {
-          "x": 10.0,
-          "y": 1.5
-        },
-        "width": 1.2
-      },
-      {
-        "id": "o8",
-        "type": "door",
-        "rooms": [
-          "r6",
-          "r4"
-        ],
-        "position": {
-          "x": 8.5,
-          "y": 4.5
-        },
-        "width": 0.9
-      },
-      {
-        "id": "o9",
-        "type": "door",
-        "rooms": [
-          "r5",
-          "r4"
-        ],
-        "position": {
-          "x": 6.0,
-          "y": 4.5
-        },
-        "width": 0.8
-      },
-      {
-        "id": "o10",
-        "type": "window",
-        "rooms": [
-          "r6",
-          "exterior"
-        ],
-        "position": {
-          "x": 10.0,
-          "y": 6.25
-        },
-        "width": 1.5
-      },
-      {
-        "id": "o11",
-        "type": "window",
-        "rooms": [
-          "r7",
-          "exterior"
-        ],
-        "position": {
-          "x": 2.5,
-          "y": 8.0
-        },
-        "width": 1.5
-      },
-      {
-        "id": "o12",
-        "type": "door",
-        "rooms": [
-          "r7",
-          "r1"
-        ],
-        "position": {
-          "x": 2.5,
-          "y": 5.0
-        },
-        "width": 0.9
-      },
-      {
-        "id": "o13",
-        "type": "window",
-        "rooms": [
-          "r5",
-          "exterior"
-        ],
-        "position": {
-          "x": 6.0,
-          "y": 8.0
-        },
-        "width": 0.6
+        "floor": {
+          "name": "Ground floor",
+          "height": 3.0,
+          "rooms": [
+            {
+              "id": "r1",
+              "name": "Living Room",
+              "type": "living",
+              "outdoor": false,
+              "polygon": [
+                {
+                  "x": 0.0,
+                  "y": 0.0
+                },
+                {
+                  "x": 5.0,
+                  "y": 0.0
+                },
+                {
+                  "x": 5.0,
+                  "y": 5.0
+                },
+                {
+                  "x": 0.0,
+                  "y": 5.0
+                }
+              ]
+            },
+            {
+              "id": "r2",
+              "name": "Kitchen",
+              "type": "kitchen",
+              "outdoor": false,
+              "polygon": [
+                {
+                  "x": 5.0,
+                  "y": 0.0
+                },
+                {
+                  "x": 8.0,
+                  "y": 0.0
+                },
+                {
+                  "x": 8.0,
+                  "y": 3.0
+                },
+                {
+                  "x": 5.0,
+                  "y": 3.0
+                }
+              ]
+            },
+            {
+              "id": "r3",
+              "name": "Dining",
+              "type": "dining",
+              "outdoor": false,
+              "polygon": [
+                {
+                  "x": 8.0,
+                  "y": 0.0
+                },
+                {
+                  "x": 10.0,
+                  "y": 0.0
+                },
+                {
+                  "x": 10.0,
+                  "y": 3.0
+                },
+                {
+                  "x": 8.0,
+                  "y": 3.0
+                }
+              ]
+            },
+            {
+              "id": "r4",
+              "name": "Hallway",
+              "type": "hallway",
+              "outdoor": false,
+              "polygon": [
+                {
+                  "x": 5.0,
+                  "y": 3.0
+                },
+                {
+                  "x": 10.0,
+                  "y": 3.0
+                },
+                {
+                  "x": 10.0,
+                  "y": 4.5
+                },
+                {
+                  "x": 5.0,
+                  "y": 4.5
+                }
+              ]
+            },
+            {
+              "id": "r5",
+              "name": "Bathroom",
+              "type": "bathroom",
+              "outdoor": false,
+              "polygon": [
+                {
+                  "x": 5.0,
+                  "y": 4.5
+                },
+                {
+                  "x": 7.0,
+                  "y": 4.5
+                },
+                {
+                  "x": 7.0,
+                  "y": 8.0
+                },
+                {
+                  "x": 5.0,
+                  "y": 8.0
+                }
+              ]
+            },
+            {
+              "id": "r6",
+              "name": "Bedroom 1",
+              "type": "bedroom",
+              "outdoor": false,
+              "polygon": [
+                {
+                  "x": 7.0,
+                  "y": 4.5
+                },
+                {
+                  "x": 10.0,
+                  "y": 4.5
+                },
+                {
+                  "x": 10.0,
+                  "y": 8.0
+                },
+                {
+                  "x": 7.0,
+                  "y": 8.0
+                }
+              ]
+            },
+            {
+              "id": "r7",
+              "name": "Bedroom 2",
+              "type": "bedroom",
+              "outdoor": false,
+              "polygon": [
+                {
+                  "x": 0.0,
+                  "y": 5.0
+                },
+                {
+                  "x": 5.0,
+                  "y": 5.0
+                },
+                {
+                  "x": 5.0,
+                  "y": 8.0
+                },
+                {
+                  "x": 0.0,
+                  "y": 8.0
+                }
+              ]
+            }
+          ],
+          "walls": [],
+          "openings": [
+            {
+              "id": "o1",
+              "type": "door",
+              "rooms": [
+                "r1",
+                "exterior"
+              ],
+              "position": {
+                "x": 0.0,
+                "y": 2.5
+              },
+              "width": 1.0
+            },
+            {
+              "id": "o2",
+              "type": "window",
+              "rooms": [
+                "r1",
+                "exterior"
+              ],
+              "position": {
+                "x": 2.5,
+                "y": 0.0
+              },
+              "width": 1.8
+            },
+            {
+              "id": "o3",
+              "type": "door",
+              "rooms": [
+                "r1",
+                "r4"
+              ],
+              "position": {
+                "x": 5.0,
+                "y": 3.75
+              },
+              "width": 0.9
+            },
+            {
+              "id": "o4",
+              "type": "door",
+              "rooms": [
+                "r2",
+                "r4"
+              ],
+              "position": {
+                "x": 6.5,
+                "y": 3.0
+              },
+              "width": 0.9
+            },
+            {
+              "id": "o5",
+              "type": "door",
+              "rooms": [
+                "r2",
+                "r3"
+              ],
+              "position": {
+                "x": 8.0,
+                "y": 1.5
+              },
+              "width": 1.2
+            },
+            {
+              "id": "o6",
+              "type": "window",
+              "rooms": [
+                "r2",
+                "exterior"
+              ],
+              "position": {
+                "x": 6.5,
+                "y": 0.0
+              },
+              "width": 1.2
+            },
+            {
+              "id": "o7",
+              "type": "window",
+              "rooms": [
+                "r3",
+                "exterior"
+              ],
+              "position": {
+                "x": 10.0,
+                "y": 1.5
+              },
+              "width": 1.2
+            },
+            {
+              "id": "o8",
+              "type": "door",
+              "rooms": [
+                "r6",
+                "r4"
+              ],
+              "position": {
+                "x": 8.5,
+                "y": 4.5
+              },
+              "width": 0.9
+            },
+            {
+              "id": "o9",
+              "type": "door",
+              "rooms": [
+                "r5",
+                "r4"
+              ],
+              "position": {
+                "x": 6.0,
+                "y": 4.5
+              },
+              "width": 0.8
+            },
+            {
+              "id": "o10",
+              "type": "window",
+              "rooms": [
+                "r6",
+                "exterior"
+              ],
+              "position": {
+                "x": 10.0,
+                "y": 6.25
+              },
+              "width": 1.5
+            },
+            {
+              "id": "o11",
+              "type": "window",
+              "rooms": [
+                "r7",
+                "exterior"
+              ],
+              "position": {
+                "x": 2.5,
+                "y": 8.0
+              },
+              "width": 1.5
+            },
+            {
+              "id": "o12",
+              "type": "door",
+              "rooms": [
+                "r7",
+                "r1"
+              ],
+              "position": {
+                "x": 2.5,
+                "y": 5.0
+              },
+              "width": 0.9
+            },
+            {
+              "id": "o13",
+              "type": "window",
+              "rooms": [
+                "r5",
+                "exterior"
+              ],
+              "position": {
+                "x": 6.0,
+                "y": 8.0
+              },
+              "width": 0.6
+            }
+          ],
+          "stairs": [],
+          "columns": [],
+          "notes": "Hand-written sample plan for testing without the language model."
+        }
       }
     ],
-    "notes": "Hand-written sample plan for testing without the language model."
+    "notes": ""
   },
   "geometry": {
     "bounds": {
@@ -348,467 +374,492 @@
         "y": 4.0
       }
     },
-    "rooms": [
+    "levels": [
       {
-        "id": "r1",
-        "name": "Living Room",
-        "type": "living",
-        "polygon": [
+        "index": 0,
+        "name": "Ground floor",
+        "elevation": 0.0,
+        "height": 3.0,
+        "rooms": [
           {
-            "x": -5.0,
-            "y": 4.0
+            "id": "r1",
+            "name": "Living Room",
+            "type": "living",
+            "outdoor": false,
+            "polygon": [
+              {
+                "x": -5.0,
+                "y": 4.0
+              },
+              {
+                "x": -5.0,
+                "y": -1.0
+              },
+              {
+                "x": 0.0,
+                "y": -1.0
+              },
+              {
+                "x": 0.0,
+                "y": 4.0
+              }
+            ],
+            "centroid": {
+              "x": -2.5,
+              "y": 1.5
+            },
+            "area": 25.0
           },
           {
-            "x": -5.0,
-            "y": -1.0
+            "id": "r2",
+            "name": "Kitchen",
+            "type": "kitchen",
+            "outdoor": false,
+            "polygon": [
+              {
+                "x": 0.0,
+                "y": 4.0
+              },
+              {
+                "x": 0.0,
+                "y": 1.0
+              },
+              {
+                "x": 3.0,
+                "y": 1.0
+              },
+              {
+                "x": 3.0,
+                "y": 4.0
+              }
+            ],
+            "centroid": {
+              "x": 1.5,
+              "y": 2.5
+            },
+            "area": 9.0
           },
           {
-            "x": 0.0,
-            "y": -1.0
+            "id": "r3",
+            "name": "Dining",
+            "type": "dining",
+            "outdoor": false,
+            "polygon": [
+              {
+                "x": 3.0,
+                "y": 4.0
+              },
+              {
+                "x": 3.0,
+                "y": 1.0
+              },
+              {
+                "x": 5.0,
+                "y": 1.0
+              },
+              {
+                "x": 5.0,
+                "y": 4.0
+              }
+            ],
+            "centroid": {
+              "x": 4.0,
+              "y": 2.5
+            },
+            "area": 6.0
           },
           {
-            "x": 0.0,
-            "y": 4.0
+            "id": "r4",
+            "name": "Hallway",
+            "type": "hallway",
+            "outdoor": false,
+            "polygon": [
+              {
+                "x": 0.0,
+                "y": 1.0
+              },
+              {
+                "x": 0.0,
+                "y": -0.5
+              },
+              {
+                "x": 5.0,
+                "y": -0.5
+              },
+              {
+                "x": 5.0,
+                "y": 1.0
+              }
+            ],
+            "centroid": {
+              "x": 2.5,
+              "y": 0.25
+            },
+            "area": 7.5
+          },
+          {
+            "id": "r5",
+            "name": "Bathroom",
+            "type": "bathroom",
+            "outdoor": false,
+            "polygon": [
+              {
+                "x": 0.0,
+                "y": -0.5
+              },
+              {
+                "x": 0.0,
+                "y": -4.0
+              },
+              {
+                "x": 2.0,
+                "y": -4.0
+              },
+              {
+                "x": 2.0,
+                "y": -0.5
+              }
+            ],
+            "centroid": {
+              "x": 1.0,
+              "y": -2.25
+            },
+            "area": 7.0
+          },
+          {
+            "id": "r6",
+            "name": "Bedroom 1",
+            "type": "bedroom",
+            "outdoor": false,
+            "polygon": [
+              {
+                "x": 2.0,
+                "y": -0.5
+              },
+              {
+                "x": 2.0,
+                "y": -4.0
+              },
+              {
+                "x": 5.0,
+                "y": -4.0
+              },
+              {
+                "x": 5.0,
+                "y": -0.5
+              }
+            ],
+            "centroid": {
+              "x": 3.5,
+              "y": -2.25
+            },
+            "area": 10.5
+          },
+          {
+            "id": "r7",
+            "name": "Bedroom 2",
+            "type": "bedroom",
+            "outdoor": false,
+            "polygon": [
+              {
+                "x": -5.0,
+                "y": -1.0
+              },
+              {
+                "x": -5.0,
+                "y": -4.0
+              },
+              {
+                "x": 0.0,
+                "y": -4.0
+              },
+              {
+                "x": 0.0,
+                "y": -1.0
+              }
+            ],
+            "centroid": {
+              "x": -2.5,
+              "y": -2.5
+            },
+            "area": 15.0
           }
         ],
-        "centroid": {
-          "x": -2.5,
-          "y": 1.5
-        },
-        "area": 25.0
-      },
-      {
-        "id": "r2",
-        "name": "Kitchen",
-        "type": "kitchen",
-        "polygon": [
+        "walls": [
           {
-            "x": 0.0,
-            "y": 4.0
+            "id": "w1",
+            "start": {
+              "x": -5.0,
+              "y": -4.0
+            },
+            "end": {
+              "x": -5.0,
+              "y": 4.0
+            },
+            "kind": "exterior",
+            "thickness": 0.2,
+            "height": 3.0,
+            "exterior": true,
+            "openings": [
+              {
+                "id": "o1",
+                "type": "door",
+                "offset": 5.5,
+                "width": 1.0,
+                "sill": 0.0,
+                "head": 2.1
+              }
+            ]
           },
           {
-            "x": 0.0,
-            "y": 1.0
+            "id": "w2",
+            "start": {
+              "x": -5.0,
+              "y": -1.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": -1.0
+            },
+            "kind": "interior",
+            "thickness": 0.12,
+            "height": 3.0,
+            "exterior": false,
+            "openings": [
+              {
+                "id": "o12",
+                "type": "door",
+                "offset": 2.5,
+                "width": 0.9,
+                "sill": 0.0,
+                "head": 2.1
+              }
+            ]
           },
           {
-            "x": 3.0,
-            "y": 1.0
+            "id": "w3",
+            "start": {
+              "x": 0.0,
+              "y": -4.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": 4.0
+            },
+            "kind": "interior",
+            "thickness": 0.12,
+            "height": 3.0,
+            "exterior": false,
+            "openings": [
+              {
+                "id": "o3",
+                "type": "door",
+                "offset": 4.25,
+                "width": 0.9,
+                "sill": 0.0,
+                "head": 2.1
+              }
+            ]
           },
           {
-            "x": 3.0,
-            "y": 4.0
-          }
-        ],
-        "centroid": {
-          "x": 1.5,
-          "y": 2.5
-        },
-        "area": 9.0
-      },
-      {
-        "id": "r3",
-        "name": "Dining",
-        "type": "dining",
-        "polygon": [
-          {
-            "x": 3.0,
-            "y": 4.0
+            "id": "w4",
+            "start": {
+              "x": -5.0,
+              "y": 4.0
+            },
+            "end": {
+              "x": 5.0,
+              "y": 4.0
+            },
+            "kind": "exterior",
+            "thickness": 0.2,
+            "height": 3.0,
+            "exterior": true,
+            "openings": [
+              {
+                "id": "o2",
+                "type": "window",
+                "offset": 2.5,
+                "width": 1.8,
+                "sill": 0.9,
+                "head": 2.1
+              },
+              {
+                "id": "o6",
+                "type": "window",
+                "offset": 6.5,
+                "width": 1.2,
+                "sill": 0.9,
+                "head": 2.1
+              }
+            ]
           },
           {
-            "x": 3.0,
-            "y": 1.0
+            "id": "w5",
+            "start": {
+              "x": 0.0,
+              "y": 1.0
+            },
+            "end": {
+              "x": 5.0,
+              "y": 1.0
+            },
+            "kind": "interior",
+            "thickness": 0.12,
+            "height": 3.0,
+            "exterior": false,
+            "openings": [
+              {
+                "id": "o4",
+                "type": "door",
+                "offset": 1.5,
+                "width": 0.9,
+                "sill": 0.0,
+                "head": 2.1
+              }
+            ]
           },
           {
-            "x": 5.0,
-            "y": 1.0
+            "id": "w6",
+            "start": {
+              "x": 3.0,
+              "y": 1.0
+            },
+            "end": {
+              "x": 3.0,
+              "y": 4.0
+            },
+            "kind": "interior",
+            "thickness": 0.12,
+            "height": 3.0,
+            "exterior": false,
+            "openings": [
+              {
+                "id": "o5",
+                "type": "door",
+                "offset": 1.5,
+                "width": 1.2,
+                "sill": 0.0,
+                "head": 2.1
+              }
+            ]
           },
           {
-            "x": 5.0,
-            "y": 4.0
-          }
-        ],
-        "centroid": {
-          "x": 4.0,
-          "y": 2.5
-        },
-        "area": 6.0
-      },
-      {
-        "id": "r4",
-        "name": "Hallway",
-        "type": "hallway",
-        "polygon": [
-          {
-            "x": 0.0,
-            "y": 1.0
+            "id": "w7",
+            "start": {
+              "x": 5.0,
+              "y": -4.0
+            },
+            "end": {
+              "x": 5.0,
+              "y": 4.0
+            },
+            "kind": "exterior",
+            "thickness": 0.2,
+            "height": 3.0,
+            "exterior": true,
+            "openings": [
+              {
+                "id": "o10",
+                "type": "window",
+                "offset": 1.75,
+                "width": 1.5,
+                "sill": 0.9,
+                "head": 2.1
+              },
+              {
+                "id": "o7",
+                "type": "window",
+                "offset": 6.5,
+                "width": 1.2,
+                "sill": 0.9,
+                "head": 2.1
+              }
+            ]
           },
           {
-            "x": 0.0,
-            "y": -0.5
+            "id": "w8",
+            "start": {
+              "x": 0.0,
+              "y": -0.5
+            },
+            "end": {
+              "x": 5.0,
+              "y": -0.5
+            },
+            "kind": "interior",
+            "thickness": 0.12,
+            "height": 3.0,
+            "exterior": false,
+            "openings": [
+              {
+                "id": "o9",
+                "type": "door",
+                "offset": 1.0,
+                "width": 0.8,
+                "sill": 0.0,
+                "head": 2.1
+              },
+              {
+                "id": "o8",
+                "type": "door",
+                "offset": 3.5,
+                "width": 0.9,
+                "sill": 0.0,
+                "head": 2.1
+              }
+            ]
           },
           {
-            "x": 5.0,
-            "y": -0.5
+            "id": "w9",
+            "start": {
+              "x": -5.0,
+              "y": -4.0
+            },
+            "end": {
+              "x": 5.0,
+              "y": -4.0
+            },
+            "kind": "exterior",
+            "thickness": 0.2,
+            "height": 3.0,
+            "exterior": true,
+            "openings": [
+              {
+                "id": "o11",
+                "type": "window",
+                "offset": 2.5,
+                "width": 1.5,
+                "sill": 0.9,
+                "head": 2.1
+              },
+              {
+                "id": "o13",
+                "type": "window",
+                "offset": 6.0,
+                "width": 0.6,
+                "sill": 0.9,
+                "head": 2.1
+              }
+            ]
           },
           {
-            "x": 5.0,
-            "y": 1.0
-          }
-        ],
-        "centroid": {
-          "x": 2.5,
-          "y": 0.25
-        },
-        "area": 7.5
-      },
-      {
-        "id": "r5",
-        "name": "Bathroom",
-        "type": "bathroom",
-        "polygon": [
-          {
-            "x": 0.0,
-            "y": -0.5
-          },
-          {
-            "x": 0.0,
-            "y": -4.0
-          },
-          {
-            "x": 2.0,
-            "y": -4.0
-          },
-          {
-            "x": 2.0,
-            "y": -0.5
-          }
-        ],
-        "centroid": {
-          "x": 1.0,
-          "y": -2.25
-        },
-        "area": 7.0
-      },
-      {
-        "id": "r6",
-        "name": "Bedroom 1",
-        "type": "bedroom",
-        "polygon": [
-          {
-            "x": 2.0,
-            "y": -0.5
-          },
-          {
-            "x": 2.0,
-            "y": -4.0
-          },
-          {
-            "x": 5.0,
-            "y": -4.0
-          },
-          {
-            "x": 5.0,
-            "y": -0.5
-          }
-        ],
-        "centroid": {
-          "x": 3.5,
-          "y": -2.25
-        },
-        "area": 10.5
-      },
-      {
-        "id": "r7",
-        "name": "Bedroom 2",
-        "type": "bedroom",
-        "polygon": [
-          {
-            "x": -5.0,
-            "y": -1.0
-          },
-          {
-            "x": -5.0,
-            "y": -4.0
-          },
-          {
-            "x": 0.0,
-            "y": -4.0
-          },
-          {
-            "x": 0.0,
-            "y": -1.0
-          }
-        ],
-        "centroid": {
-          "x": -2.5,
-          "y": -2.5
-        },
-        "area": 15.0
-      }
-    ],
-    "walls": [
-      {
-        "id": "w1",
-        "start": {
-          "x": -5.0,
-          "y": -4.0
-        },
-        "end": {
-          "x": -5.0,
-          "y": 4.0
-        },
-        "thickness": 0.2,
-        "height": 3.0,
-        "exterior": true,
-        "openings": [
-          {
-            "id": "o1",
-            "type": "door",
-            "offset": 5.5,
-            "width": 1.0,
-            "sill": 0.0,
-            "head": 2.1
-          }
-        ]
-      },
-      {
-        "id": "w2",
-        "start": {
-          "x": -5.0,
-          "y": -1.0
-        },
-        "end": {
-          "x": 0.0,
-          "y": -1.0
-        },
-        "thickness": 0.12,
-        "height": 3.0,
-        "exterior": false,
-        "openings": [
-          {
-            "id": "o12",
-            "type": "door",
-            "offset": 2.5,
-            "width": 0.9,
-            "sill": 0.0,
-            "head": 2.1
-          }
-        ]
-      },
-      {
-        "id": "w3",
-        "start": {
-          "x": 0.0,
-          "y": -4.0
-        },
-        "end": {
-          "x": 0.0,
-          "y": 4.0
-        },
-        "thickness": 0.12,
-        "height": 3.0,
-        "exterior": false,
-        "openings": [
-          {
-            "id": "o3",
-            "type": "door",
-            "offset": 4.25,
-            "width": 0.9,
-            "sill": 0.0,
-            "head": 2.1
-          }
-        ]
-      },
-      {
-        "id": "w4",
-        "start": {
-          "x": -5.0,
-          "y": 4.0
-        },
-        "end": {
-          "x": 5.0,
-          "y": 4.0
-        },
-        "thickness": 0.2,
-        "height": 3.0,
-        "exterior": true,
-        "openings": [
-          {
-            "id": "o2",
-            "type": "window",
-            "offset": 2.5,
-            "width": 1.8,
-            "sill": 0.9,
-            "head": 2.1
-          },
-          {
-            "id": "o6",
-            "type": "window",
-            "offset": 6.5,
-            "width": 1.2,
-            "sill": 0.9,
-            "head": 2.1
+            "id": "w10",
+            "start": {
+              "x": 2.0,
+              "y": -4.0
+            },
+            "end": {
+              "x": 2.0,
+              "y": -0.5
+            },
+            "kind": "interior",
+            "thickness": 0.12,
+            "height": 3.0,
+            "exterior": false,
+            "openings": []
           }
         ]
-      },
-      {
-        "id": "w5",
-        "start": {
-          "x": 0.0,
-          "y": 1.0
-        },
-        "end": {
-          "x": 5.0,
-          "y": 1.0
-        },
-        "thickness": 0.12,
-        "height": 3.0,
-        "exterior": false,
-        "openings": [
-          {
-            "id": "o4",
-            "type": "door",
-            "offset": 1.5,
-            "width": 0.9,
-            "sill": 0.0,
-            "head": 2.1
-          }
-        ]
-      },
-      {
-        "id": "w6",
-        "start": {
-          "x": 3.0,
-          "y": 1.0
-        },
-        "end": {
-          "x": 3.0,
-          "y": 4.0
-        },
-        "thickness": 0.12,
-        "height": 3.0,
-        "exterior": false,
-        "openings": [
-          {
-            "id": "o5",
-            "type": "door",
-            "offset": 1.5,
-            "width": 1.2,
-            "sill": 0.0,
-            "head": 2.1
-          }
-        ]
-      },
-      {
-        "id": "w7",
-        "start": {
-          "x": 5.0,
-          "y": -4.0
-        },
-        "end": {
-          "x": 5.0,
-          "y": 4.0
-        },
-        "thickness": 0.2,
-        "height": 3.0,
-        "exterior": true,
-        "openings": [
-          {
-            "id": "o10",
-            "type": "window",
-            "offset": 1.75,
-            "width": 1.5,
-            "sill": 0.9,
-            "head": 2.1
-          },
-          {
-            "id": "o7",
-            "type": "window",
-            "offset": 6.5,
-            "width": 1.2,
-            "sill": 0.9,
-            "head": 2.1
-          }
-        ]
-      },
-      {
-        "id": "w8",
-        "start": {
-          "x": 0.0,
-          "y": -0.5
-        },
-        "end": {
-          "x": 5.0,
-          "y": -0.5
-        },
-        "thickness": 0.12,
-        "height": 3.0,
-        "exterior": false,
-        "openings": [
-          {
-            "id": "o9",
-            "type": "door",
-            "offset": 1.0,
-            "width": 0.8,
-            "sill": 0.0,
-            "head": 2.1
-          },
-          {
-            "id": "o8",
-            "type": "door",
-            "offset": 3.5,
-            "width": 0.9,
-            "sill": 0.0,
-            "head": 2.1
-          }
-        ]
-      },
-      {
-        "id": "w9",
-        "start": {
-          "x": -5.0,
-          "y": -4.0
-        },
-        "end": {
-          "x": 5.0,
-          "y": -4.0
-        },
-        "thickness": 0.2,
-        "height": 3.0,
-        "exterior": true,
-        "openings": [
-          {
-            "id": "o11",
-            "type": "window",
-            "offset": 2.5,
-            "width": 1.5,
-            "sill": 0.9,
-            "head": 2.1
-          },
-          {
-            "id": "o13",
-            "type": "window",
-            "offset": 6.0,
-            "width": 0.6,
-            "sill": 0.9,
-            "head": 2.1
-          }
-        ]
-      },
-      {
-        "id": "w10",
-        "start": {
-          "x": 2.0,
-          "y": -4.0
-        },
-        "end": {
-          "x": 2.0,
-          "y": -0.5
-        },
-        "thickness": 0.12,
-        "height": 3.0,
-        "exterior": false,
-        "openings": []
       }
     ]
   },

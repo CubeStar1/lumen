@@ -7,10 +7,9 @@ using UnityEngine.Rendering;
 
 namespace FloorPlanViz.Model
 {
-    /// <summary>Turns plan geometry into a <see cref="FloorPlanModel"/> hierarchy at 1 unit = 1 metre.</summary>
+    /// <summary>Turns building geometry into a <see cref="FloorPlanModel"/> hierarchy at 1 unit = 1 metre, one child per level.</summary>
     public sealed class FloorPlanBuilder : MonoBehaviour
     {
-        const float DefaultWallHeight = 3f;
         const float LabelLift = 0.5f;
         const float BaseMargin = 0.4f;
         const float BaseThickness = 0.12f;
@@ -19,44 +18,59 @@ namespace FloorPlanViz.Model
         [SerializeField] MaterialPalette palette;
         [SerializeField] RoomLabel labelPrefab;
 
-        public FloorPlanModel Build(PlanGeometry geometry, Transform parent)
+        public FloorPlanModel Build(BuildingGeometry geometry, Transform parent)
         {
             var root = new GameObject("FloorPlan").transform;
             root.SetParent(parent, false);
             var meshes = new List<Mesh>();
-            var wallHeight = geometry.Walls.Count > 0 ? geometry.Walls.Max(w => w.Height) : DefaultWallHeight;
+            var levels = geometry.Levels.OrderBy(l => l.Elevation).ToList();
 
-            var exterior = PlanMeshBuilder.Walls(geometry.Walls.Where(w => w.Exterior));
-            var interior = PlanMeshBuilder.Walls(geometry.Walls.Where(w => !w.Exterior));
-            AddPart(root, "ExteriorWalls", exterior.Sides, palette.ExteriorWall, meshes);
-            AddPart(root, "InteriorWalls", interior.Sides, palette.InteriorWall, meshes);
-            AddPart(root, "ExteriorCaps", exterior.Caps, palette.WallCap, meshes);
-            AddPart(root, "InteriorCaps", interior.Caps, palette.WallCap, meshes);
-            AddPart(root, "Frames", PlanMeshBuilder.Frames(geometry.Walls), palette.Frame, meshes);
-            AddPart(root, "Glass", PlanMeshBuilder.Glass(geometry.Walls), palette.Glass, meshes, castShadows: false);
-            foreach (var rooms in geometry.Rooms.GroupBy(r => r.Type))
-                AddPart(root, $"Floor_{rooms.Key}", PlanMeshBuilder.Floors(rooms), palette.Floor(rooms.Key), meshes);
+            var levelRoots = levels.Select(level => AddLevel(root, level, meshes)).ToList();
+
+            var top = levels[^1];
+            var roof = AddPart(levelRoots[^1], "Roof", PlanMeshBuilder.Roof(top.Rooms.Where(r => !r.Outdoor), top.Height), palette.Roof, meshes);
+            var labels = new GameObject("Labels").transform;
+            labels.SetParent(root, false);
+            var labelGroups = levels.Select(level => AddLabels(labels, level)).ToArray();
 
             var board = AddPart(root, "Base", PlanMeshBuilder.Base(geometry.Bounds, BaseMargin, BaseThickness), palette.BaseBoard, meshes);
             var ground = AddPart(root, "ShadowCatcher", PlanMeshBuilder.Ground(geometry.Bounds, GroundMargin, -BaseThickness - 0.003f),
                 palette.ShadowCatcher, meshes, castShadows: false);
-            var roof = AddPart(root, "Roof", PlanMeshBuilder.Roof(geometry.Rooms, wallHeight), palette.Roof, meshes);
-            var labels = AddLabels(root, geometry.Rooms, wallHeight + LabelLift);
 
             var model = root.gameObject.AddComponent<FloorPlanModel>();
-            model.Initialize(geometry, new ModelParts(roof, labels, new[] { board, ground }, BaseThickness), meshes);
+            model.Initialize(geometry, new ModelParts(roof, labels, labelGroups, new[] { board, ground }, BaseThickness), meshes);
             model.RoofVisible = false;
             return model;
         }
 
-        Transform AddLabels(Transform root, IEnumerable<RoomData> rooms, float height)
+        Transform AddLevel(Transform root, LevelGeometry level, List<Mesh> meshes)
         {
-            var labels = new GameObject("Labels").transform;
-            labels.SetParent(root, false);
-            labels.localPosition = Vector3.up * height;
-            foreach (var room in rooms)
-                Instantiate(labelPrefab, labels).Show(room.Name, room.Area, room.Centroid.ToWorld());
-            return labels;
+            var levelRoot = new GameObject(level.Name).transform;
+            levelRoot.SetParent(root, false);
+            levelRoot.localPosition = Vector3.up * level.Elevation;
+
+            var exterior = PlanMeshBuilder.Walls(level.Walls.Where(w => w.Exterior));
+            var interior = PlanMeshBuilder.Walls(level.Walls.Where(w => !w.Exterior));
+            AddPart(levelRoot, "ExteriorWalls", exterior.Sides, palette.ExteriorWall, meshes);
+            AddPart(levelRoot, "InteriorWalls", interior.Sides, palette.InteriorWall, meshes);
+            AddPart(levelRoot, "ExteriorCaps", exterior.Caps, palette.WallCap, meshes);
+            AddPart(levelRoot, "InteriorCaps", interior.Caps, palette.WallCap, meshes);
+            AddPart(levelRoot, "Frames", PlanMeshBuilder.Frames(level.Walls), palette.Frame, meshes);
+            AddPart(levelRoot, "Glass", PlanMeshBuilder.Glass(level.Walls), palette.Glass, meshes, castShadows: false);
+            foreach (var rooms in level.Rooms.GroupBy(r => r.Type))
+                AddPart(levelRoot, $"Floor_{rooms.Key}", PlanMeshBuilder.Floors(rooms), palette.Floor(rooms.Key), meshes);
+            return levelRoot;
+        }
+
+        LabelGroup AddLabels(Transform labels, LevelGeometry level)
+        {
+            var group = new GameObject(level.Name).transform;
+            group.SetParent(labels, false);
+            var defaultHeight = level.Height + LabelLift;
+            group.localPosition = Vector3.up * (level.Elevation + defaultHeight);
+            foreach (var room in level.Rooms)
+                Instantiate(labelPrefab, group).Show(room.Name, room.Area, room.Centroid.ToWorld());
+            return new LabelGroup(group, level.Elevation, defaultHeight);
         }
 
         static GameObject AddPart(Transform root, string name, MeshData data, Material material, List<Mesh> meshes, bool castShadows = true)

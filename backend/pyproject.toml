@@ -8,6 +8,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.164.0",
+    "numpy>=2.5.5",
     "openai>=3.55.1",
     "pillow>=13.0.0",
     "pydantic>=2.14.3",
@@ -19,6 +20,7 @@ dependencies = [
 
 [project.scripts]
 try-plan = "floorplan.cli:main"
+eval = "floorplan.evaluation.runner:main"
 
 [build-system]
 requires = ["uv_build>=0.11.26,<0.12.0"]

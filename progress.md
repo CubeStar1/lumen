@@ -2,6 +2,51 @@
 
 Last updated: 2026-11-19. Read alongside [PLAN.md](PLAN.md), which has the design, data contract and milestones.
 
+## v2: flexible plans and whole buildings (started 2026-11-19)
+
+Plan: [PLAN_V2.md](PLAN_V2.md). Decisions: building input supports one sheet **and** a photo per floor;
+the OpenCV wall refinement waits for the eval; single floor (V0–V5) ships before buildings (V6–V7).
+
+**V0 eval harness: done.** `backend/src/floorplan/evaluation/` (reference format, metrics, overlays, report).
+`uv run eval [cases] [--repeat N] [--model M] [--effort E] [--name RUN] [--rescore RUN]` writes
+`backend/eval/runs/<run>/`. References are traced in pixels with one `metres_per_unit`; each case has a
+`reference_overlay.png` for checking. Six floor cases in `backend/eval/cases/`:
+- `two_bedroom` (synthetic, exact) and `ground_floor_imperial` (the user's ft-in plan, hand-traced);
+- `indian_30x35` and `bungalow_2bhk` (Commons, traced from printed dimensions);
+- `curved_stair_first_floor` (approximate: no dimensions, textured render, curved stair, angled bay);
+- `angled_sketch` (coarse: low-res hand sketch with two angled wings).
+`backend/eval/buildings/somerville_four_floors` is kept for V6. Sources and licences: `backend/eval/ATTRIBUTION.md`.
+
+**Model comparison (2026-11-19, v1 pipeline, 2 runs per case, mean over 6 cases):**
+
+| Model | Wall F1 | Room IoU | Types | Opening R | Opening err m |
+|---|---|---|---|---|---|
+| gpt-5.6-luna | 0.48 | 0.56 | 0.68 | 0.34 | 0.14 |
+| gpt-6-luna | 0.58 | 0.56 | 0.65 | 0.41 | 0.09 |
+| **gpt-6.2-sol** | **0.71** | **0.73** | 0.74 | **0.82** | **0.05** |
+
+The default is now **gpt-6.2-sol** (20x Luna's token price, still cents per plan). On the real ground floor it
+reaches wall F1 0.93 and opening recall 0.88 (gpt-5.6-luna: 0.36 / 0.05). Every model still fails the angled and
+curved cases (wall F1 ≤ 0.23) and finds no stairs: those are v1 pipeline limits (global x/y snapping, no
+stair type), which V1–V4 address. Runs: `eval/runs/cmp-*`.
+
+**V1 contract v2: done (2026-11-19).**
+- Backend: `FloorSpec` (rooms with an `outdoor` flag, extra walls with a kind, openings incl. `sliding_door` and
+  `opening`, stairs with flights/landings, columns) inside a `BuildingSpec` of levels; geometry is
+  `BuildingGeometry` → `LevelGeometry[]`, all levels in one world frame. New room types: toilet, staircase, porch,
+  terrace, store, garage.
+- Outdoor rooms get no walls, so porches and sit-outs stay open; extra walls (stubs, low walls, parapets) are
+  built with their own height and thickness. Stairs and columns are extracted and stored but not yet built (V4).
+- Edits take a `level` (default 0). Old saved records and v1 spec files are upgraded on read (`legacy.py`). The
+  sample spec and the Unity sample JSON are in the new format. Library counts and area exclude outdoor rooms.
+- Unity: `BuildingGeometry`/`LevelGeometry` data, one child per level at its elevation, roof on the top level, label
+  groups per level; the spec is kept as an opaque object and sent back unchanged for edits; new enum values are
+  appended (materials store them as ints) and borrow an older type's material and style.
+- Verified: 42 backend tests, 13 Unity EditMode tests, clean compile; a live gpt-6.2-sol parse of the real ground
+  floor (13 rooms incl. 2 outdoor, 31 openings, 1 stair, 3 columns) rendered correctly in `PlanDebug`.
+- Still v1 behaviour: walls come from room edges, so open-plan boundaries (dining hall / stair hall) still get
+  walls. That is V2.
+
 ## Where things stand
 
 | Milestone | State |
@@ -99,7 +144,7 @@ settings sheet, placement with the reticle, roof/labels/walk toggles, edit sheet
 - **iOS only** (no Android device): iPhone 12 and iPad Air M2. Neither has LiDAR, so only human occlusion is used.
   The Mac is only used for Xcode signing.
 - **Pure-LLM parsing** with the OpenAI Responses API and structured output (`responses.parse(text_format=PlanSpec)`),
-  model `gpt-5.6-luna`.
+  model `gpt-5.6-luna` (switched to `gpt-6.2-sol` on 2026-11-19 after the eval).
 - The LLM outputs **rooms and openings only**; walls are derived in code. Points are `{x, y}` objects.
 - **One repair retry** with validation feedback, then a 502.
 - Image input via **NativeGallery 1.9.5** (git package) plus a bundled sample plan.

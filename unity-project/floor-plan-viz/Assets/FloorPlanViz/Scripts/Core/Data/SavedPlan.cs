@@ -8,6 +8,8 @@ namespace FloorPlanViz.Data
         public string Name { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public string Kind { get; set; } = "floor";
+        public int LevelCount { get; set; } = 1;
         public bool HasImage { get; set; }
         public int RoomCount { get; set; }
         public float Area { get; set; }

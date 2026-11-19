@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using FloorPlanViz.Api;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -43,9 +44,9 @@ namespace FloorPlanViz.UI
 
             SetName(document.Name);
             moreButton.gameObject.SetActive(document.IsSaved);
-            outline.SetGeometry(geometry);
-            roomsValue.text = geometry.Rooms.Count.ToString();
-            areaValue.text = Format.Area(geometry.Rooms.Sum(r => r.Area));
+            outline.SetGeometry(geometry.Ground, geometry.Bounds);
+            roomsValue.text = geometry.Rooms.Count(r => !r.Outdoor).ToString();
+            areaValue.text = Format.Area(geometry.Rooms.Where(r => !r.Outdoor).Sum(r => r.Area));
             sizeValue.text = Format.Size(size.x, size.y);
             ShowRooms(document);
             ShowNotes(document);
@@ -74,7 +75,7 @@ namespace FloorPlanViz.UI
         void ShowNotes(PlanDocument document)
         {
             var warnings = document.Plan.Warnings.Select(w => $"<color=#FF9500><b>Check:</b></color> {w}");
-            var lines = new[] { document.Plan.Spec?.Notes }.Concat(warnings).Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
+            var lines = PlanJson.Notes(document.Plan).Concat(warnings).Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
             notesSection.SetActive(lines.Count > 0);
             notesText.text = string.Join("\n\n", lines);
         }

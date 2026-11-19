@@ -5,17 +5,34 @@ using UnityEngine;
 
 namespace FloorPlanViz.Model
 {
+    /// <summary>The room labels of one level, at its elevation plus a height that walkthrough mode can lower.</summary>
+    public readonly struct LabelGroup
+    {
+        public readonly Transform Root;
+        public readonly float Elevation;
+        public readonly float DefaultHeight;
+
+        public LabelGroup(Transform root, float elevation, float defaultHeight)
+        {
+            Root = root;
+            Elevation = elevation;
+            DefaultHeight = defaultHeight;
+        }
+    }
+
     public readonly struct ModelParts
     {
         public readonly GameObject Roof;
         public readonly Transform Labels;
+        public readonly LabelGroup[] LabelGroups;
         public readonly GameObject[] Base;
         public readonly float BaseThickness;
 
-        public ModelParts(GameObject roof, Transform labels, GameObject[] baseParts, float baseThickness)
+        public ModelParts(GameObject roof, Transform labels, LabelGroup[] labelGroups, GameObject[] baseParts, float baseThickness)
         {
             Roof = roof;
             Labels = labels;
+            LabelGroups = labelGroups;
             Base = baseParts;
             BaseThickness = baseThickness;
         }
@@ -26,9 +43,8 @@ namespace FloorPlanViz.Model
     {
         ModelParts parts;
         List<Mesh> meshes;
-        float defaultLabelHeight;
 
-        public PlanGeometry Geometry { get; private set; }
+        public BuildingGeometry Geometry { get; private set; }
 
         /// <summary>Longest side of the footprint, in metres.</summary>
         public float Footprint => Mathf.Max(Geometry.Bounds.Size.x, Geometry.Bounds.Size.y);
@@ -36,8 +52,17 @@ namespace FloorPlanViz.Model
         /// <summary>How far the floor sits above the bottom of the base board, in model units.</summary>
         public float BaseThickness => parts.BaseThickness;
 
-        /// <summary>Centre of the largest room in plan space, a natural place to stand in walkthrough mode.</summary>
-        public Vector3 MainRoomCentre => Geometry.Rooms.OrderByDescending(r => r.Area).First().Centroid.ToWorld();
+        /// <summary>Centre of the largest indoor room on the ground level, a natural place to stand in walkthrough mode.</summary>
+        public Vector3 MainRoomCentre
+        {
+            get
+            {
+                var ground = Geometry.Ground;
+                var indoor = ground.Rooms.Where(r => !r.Outdoor).ToList();
+                var room = (indoor.Count > 0 ? indoor : ground.Rooms).OrderByDescending(r => r.Area).First();
+                return room.Centroid.ToWorld() + Vector3.up * ground.Elevation;
+            }
+        }
 
         public bool RoofVisible
         {
@@ -60,18 +85,21 @@ namespace FloorPlanViz.Model
             }
         }
 
-        /// <summary>Height of the room labels above the floor; null puts them back above the walls.</summary>
+        /// <summary>Height of the room labels above each level's floor; null puts them back above the walls.</summary>
         public float? LabelHeight
         {
-            set => parts.Labels.localPosition = Vector3.up * (value ?? defaultLabelHeight);
+            set
+            {
+                foreach (var group in parts.LabelGroups)
+                    group.Root.localPosition = Vector3.up * (group.Elevation + (value ?? group.DefaultHeight));
+            }
         }
 
-        internal void Initialize(PlanGeometry geometry, ModelParts modelParts, List<Mesh> ownedMeshes)
+        internal void Initialize(BuildingGeometry geometry, ModelParts modelParts, List<Mesh> ownedMeshes)
         {
             Geometry = geometry;
             parts = modelParts;
             meshes = ownedMeshes;
-            defaultLabelHeight = parts.Labels.localPosition.y;
         }
 
         void OnDestroy()

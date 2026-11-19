@@ -1,8 +1,14 @@
 from factories import opening, plan, rect
 
-from floorplan.geometry import build_geometry
+from floorplan.geometry import build_building
 from floorplan.geometry.vec import edges
 from floorplan.models import OpeningType
+from floorplan.service import single_floor
+
+
+def build_geometry(floor):
+    geometry, warnings = build_building(single_floor(floor))
+    return geometry.levels[0], warnings
 
 
 def walls_with_openings(geometry):
@@ -10,10 +16,11 @@ def walls_with_openings(geometry):
 
 
 def test_plan_is_centred_with_y_up(two_rooms):
-    geometry, _ = build_geometry(two_rooms)
+    building, _ = build_building(single_floor(two_rooms))
+    geometry = building.levels[0]
 
-    assert geometry.bounds.min.model_dump() == {"x": -3.5, "y": -1.5}
-    assert geometry.bounds.max.model_dump() == {"x": 3.5, "y": 1.5}
+    assert building.bounds.min.model_dump() == {"x": -3.5, "y": -1.5}
+    assert building.bounds.max.model_dump() == {"x": 3.5, "y": 1.5}
     r1 = next(r for r in geometry.rooms if r.id == "r1")
     assert r1.centroid.model_dump() == {"x": -1.5, "y": 0.0}
     assert r1.area == 12

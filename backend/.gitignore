@@ -13,3 +13,7 @@ wheels/
 out/
 
 data/
+
+
+# benchmark data and runs (kept locally)
+eval/

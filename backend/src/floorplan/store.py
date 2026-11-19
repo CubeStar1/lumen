@@ -1,3 +1,4 @@
+import json
 import re
 import shutil
 import threading
@@ -6,6 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from floorplan.errors import PlanNotFoundError
+from floorplan.legacy import upgrade_record
 from floorplan.models import PlanRecord, PlanResponse, PlanSummary, RoomType
 
 RECORD = "record.json"
@@ -77,7 +79,8 @@ class PlanStore:
         return record
 
     def _read(self, plan_id: str) -> PlanRecord:
-        return PlanRecord.model_validate_json((self._folder(plan_id) / RECORD).read_text("utf-8"))
+        data = json.loads((self._folder(plan_id) / RECORD).read_text("utf-8"))
+        return PlanRecord.model_validate(upgrade_record(data))
 
     def _folder(self, plan_id: str) -> Path:
         folder = self._root / plan_id
@@ -87,7 +90,7 @@ class PlanStore:
 
 
 def default_name(plan: PlanResponse) -> str:
-    rooms = plan.geometry.rooms
+    rooms = [room for room in plan.geometry.rooms if not room.outdoor]
     bedrooms = sum(1 for room in rooms if room.type == RoomType.BEDROOM)
     return f"{bedrooms}-bedroom plan" if bedrooms else f"{len(rooms)}-room plan"
 
@@ -101,14 +104,17 @@ def _record(
     plan: PlanResponse,
 ) -> PlanRecord:
     bounds = plan.geometry.bounds
+    indoor = [room for room in plan.geometry.rooms if not room.outdoor]
     return PlanRecord(
         id=plan_id,
         name=name,
         created_at=created,
         updated_at=updated,
         has_image=has_image,
-        room_count=len(plan.geometry.rooms),
-        area=round(sum(room.area for room in plan.geometry.rooms), 1),
+        kind=plan.spec.kind,
+        level_count=len(plan.spec.levels),
+        room_count=len(indoor),
+        area=round(sum(room.area for room in indoor), 1),
         width=round(bounds.max.x - bounds.min.x, 2),
         depth=round(bounds.max.y - bounds.min.y, 2),
         plan=plan,

@@ -7,41 +7,49 @@ using UnityEngine.UI;
 
 namespace FloorPlanViz.UI
 {
-    /// <summary>Draws a top-down 2D view of plan geometry: room fills, walls and openings.</summary>
+    /// <summary>Draws a top-down 2D view of one level: room fills, walls and openings.</summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class PlanOutlineGraphic : MaskableGraphic
     {
         const float Margin = 0.9f;
         const float MinWallPixels = 2.5f;
         const float WindowLine = 0.35f;
+        const float OutdoorAlpha = 0.45f;
 
         static readonly Color WallColour = Theme.Hex(0x2C2C2E);
         static readonly Color WindowColour = Theme.Hex(0x64A8FF);
 
-        PlanGeometry geometry;
+        LevelGeometry level;
+        PlanBounds bounds;
 
-        public void SetGeometry(PlanGeometry value)
+        public void SetGeometry(LevelGeometry value, PlanBounds frame)
         {
-            geometry = value;
+            level = value;
+            bounds = frame;
             SetVerticesDirty();
         }
 
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
-            if (geometry == null || geometry.Rooms.Count == 0)
+            if (level == null || level.Rooms.Count == 0)
                 return;
 
             var rect = rectTransform.rect;
-            var size = geometry.Bounds.Size;
+            var size = bounds.Size;
             var scale = Mathf.Min(rect.width / size.x, rect.height / size.y) * Margin;
-            var centre = (geometry.Bounds.Min.ToVector2() + geometry.Bounds.Max.ToVector2()) / 2f;
+            var centre = (bounds.Min.ToVector2() + bounds.Max.ToVector2()) / 2f;
             Vector2 ToRect(Vector2 p) => rect.center + (p - centre) * scale;
 
-            foreach (var room in geometry.Rooms)
-                AddPolygon(vh, room.Polygon.Select(p => ToRect(p.ToVector2())).ToList(), RoomStyle.Colour(room.Type));
+            foreach (var room in level.Rooms)
+            {
+                var colour = RoomStyle.Colour(room.Type);
+                if (room.Outdoor)
+                    colour.a *= OutdoorAlpha;
+                AddPolygon(vh, room.Polygon.Select(p => ToRect(p.ToVector2())).ToList(), colour);
+            }
 
-            foreach (var wall in geometry.Walls)
+            foreach (var wall in level.Walls)
             {
                 var start = wall.Start.ToVector2();
                 var direction = (wall.End.ToVector2() - start).normalized;
@@ -52,7 +60,7 @@ namespace FloorPlanViz.UI
                 {
                     var from = ToRect(start + direction * (opening.Offset - opening.Width / 2f));
                     var to = ToRect(start + direction * (opening.Offset + opening.Width / 2f));
-                    if (opening.Type == OpeningType.Door)
+                    if (opening.Type != OpeningType.Window)
                         AddSegment(vh, from, to, thickness * 1.1f, Theme.Surface, extend: false);
                     else
                     {

@@ -5,28 +5,33 @@ from matplotlib.figure import Figure
 from PIL import Image
 
 from floorplan.geometry.vec import add, normalized, scale, sub, vec
-from floorplan.models import OpeningType, PlanGeometry, Wall
+from floorplan.models import BuildingGeometry, LevelGeometry, OpeningType, Wall
 
-OPENING_COLOURS = {OpeningType.DOOR: "tab:green", OpeningType.WINDOW: "tab:blue"}
+OPENING_COLOURS = {
+    OpeningType.DOOR: "tab:green",
+    OpeningType.SLIDING_DOOR: "tab:olive",
+    OpeningType.WINDOW: "tab:blue",
+    OpeningType.OPENING: "tab:orange",
+}
 
 
-def render(geometry: PlanGeometry, output: Path, source: Path | None = None) -> None:
-    figure = Figure(figsize=(16 if source else 8, 8), layout="tight")
+def render(geometry: BuildingGeometry, output: Path, source: Path | None = None) -> None:
+    panels = len(geometry.levels) + (1 if source else 0)
+    figure = Figure(figsize=(8 * panels, 8), layout="tight")
+    axes = figure.subplots(1, panels, squeeze=False)[0]
     if source:
-        image_axes, plan_axes = figure.subplots(1, 2)
-        image_axes.imshow(Image.open(source))
-        image_axes.set_title("Input")
-        image_axes.axis("off")
-    else:
-        plan_axes = figure.subplots()
-
-    _draw_plan(plan_axes, geometry)
+        axes[0].imshow(Image.open(source))
+        axes[0].set_title("Input")
+        axes[0].axis("off")
+    for level_axes, level in zip(axes[-len(geometry.levels) :], geometry.levels, strict=True):
+        _draw_level(level_axes, level)
     figure.savefig(output, dpi=120)
 
 
-def _draw_plan(axes: Axes, geometry: PlanGeometry) -> None:
+def _draw_level(axes: Axes, geometry: LevelGeometry) -> None:
     for room in geometry.rooms:
-        axes.fill([p.x for p in room.polygon], [p.y for p in room.polygon], alpha=0.25)
+        xs, ys = [p.x for p in room.polygon], [p.y for p in room.polygon]
+        axes.fill(xs, ys, alpha=0.1 if room.outdoor else 0.25, hatch="//" if room.outdoor else None)
         label = f"{room.name}\n{room.area} m²"
         axes.text(room.centroid.x, room.centroid.y, label, ha="center", va="center", fontsize=8)
 
@@ -34,7 +39,7 @@ def _draw_plan(axes: Axes, geometry: PlanGeometry) -> None:
         _draw_wall(axes, wall)
 
     axes.set_aspect("equal")
-    axes.set_title("Reconstructed (m)")
+    axes.set_title(f"{geometry.name} (m)")
     axes.grid(alpha=0.3)
 
 

@@ -6,7 +6,13 @@ from fastapi import Depends, FastAPI, File, HTTPException, Path, Request, Respon
 from fastapi.responses import FileResponse, JSONResponse
 
 from floorplan.config import Settings, get_settings
-from floorplan.errors import InvalidImageError, ModelError, PlanNotFoundError, PlanRejectedError
+from floorplan.errors import (
+    InvalidImageError,
+    LevelNotFoundError,
+    ModelError,
+    PlanNotFoundError,
+    PlanRejectedError,
+)
 from floorplan.imaging import load_image, to_data_url, to_jpeg
 from floorplan.llm.client import OpenAIPlanModel
 from floorplan.models import (
@@ -48,6 +54,7 @@ def invalid_image(_: Request, exc: InvalidImageError) -> JSONResponse:
 
 
 @app.exception_handler(PlanNotFoundError)
+@app.exception_handler(LevelNotFoundError)
 def plan_not_found(_: Request, exc: PlanNotFoundError) -> JSONResponse:
     return JSONResponse(status_code=404, content={"detail": str(exc)})
 
@@ -85,7 +92,7 @@ def parse_plan(
 
 @app.post("/plans/edit")
 def edit_unsaved_plan(request: EditRequest, service: ServiceDep) -> PlanResponse:
-    return service.edit(request.spec, request.instruction)
+    return service.edit(request.spec, request.instruction, request.level)
 
 
 @app.get("/plans")
@@ -114,7 +121,9 @@ def edit_plan(
     plan_id: PlanId, request: InstructionRequest, service: ServiceDep, store: StoreDep
 ) -> PlanRecord:
     current = store.get(plan_id).plan
-    return store.replace_plan(plan_id, service.edit(current.spec, request.instruction))
+    return store.replace_plan(
+        plan_id, service.edit(current.spec, request.instruction, request.level)
+    )
 
 
 @app.get("/plans/{plan_id}/image")

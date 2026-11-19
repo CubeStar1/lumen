@@ -18,34 +18,59 @@ namespace FloorPlanViz.Tests
         [Test]
         public void SampleResponseDeserializes()
         {
-            var response = LoadSample();
+            var geometry = LoadSample().Geometry;
+            var level = geometry.Ground;
 
-            Assert.AreEqual(7, response.Geometry.Rooms.Count);
-            Assert.AreEqual(RoomType.Living, response.Geometry.Rooms[0].Type);
-            Assert.AreEqual(3f, response.Spec.WallHeight);
-            Assert.IsTrue(response.Geometry.Walls.SelectMany(w => w.Openings).Any(o => o.Type == OpeningType.Window));
+            Assert.AreEqual(1, geometry.Levels.Count);
+            Assert.AreEqual(7, level.Rooms.Count);
+            Assert.AreEqual(RoomType.Living, level.Rooms[0].Type);
+            Assert.AreEqual(3f, level.Height);
+            Assert.IsTrue(level.Walls.All(w => w.Kind is WallKind.Exterior or WallKind.Interior));
+            Assert.IsTrue(level.Walls.SelectMany(w => w.Openings).Any(o => o.Type == OpeningType.Window));
         }
 
         [Test]
-        public void SpecSerializesInSnakeCase()
+        public void SpecRoundTripsUnchanged()
         {
             var json = PlanJson.Serialize(LoadSample().Spec);
 
-            StringAssert.Contains("\"wall_height\":3.0", json);
+            StringAssert.Contains("\"kind\":\"floor\"", json);
+            StringAssert.Contains("\"outdoor\":false", json);
             StringAssert.Contains("\"type\":\"living\"", json);
+        }
+
+        [Test]
+        public void NewEnumValuesParseFromSnakeCase()
+        {
+            var opening = PlanJson.Deserialize<OpeningData>("{\"type\":\"sliding_door\"}");
+            var room = PlanJson.Deserialize<RoomData>("{\"type\":\"porch\",\"outdoor\":true}");
+
+            Assert.AreEqual(OpeningType.SlidingDoor, opening.Type);
+            Assert.AreEqual(RoomType.Porch, room.Type);
+            Assert.AreEqual(RoomType.Balcony, room.Type.Base());
+            Assert.IsTrue(room.Outdoor);
+        }
+
+        [Test]
+        public void NotesComeFromTheSpec()
+        {
+            var notes = PlanJson.Notes(LoadSample()).ToList();
+
+            Assert.AreEqual(1, notes.Count);
+            StringAssert.Contains("Hand-written sample", notes[0]);
         }
 
         [Test]
         public void SampleBuildsNonEmptyMeshes()
         {
-            var geometry = LoadSample().Geometry;
+            var level = LoadSample().Geometry.Ground;
 
-            var walls = PlanMeshBuilder.Walls(geometry.Walls);
+            var walls = PlanMeshBuilder.Walls(level.Walls);
             Assert.Greater(walls.Sides.TriangleCount, 0);
             Assert.Greater(walls.Caps.TriangleCount, 0);
-            Assert.Greater(PlanMeshBuilder.Floors(geometry.Rooms).TriangleCount, 0);
-            Assert.Greater(PlanMeshBuilder.Glass(geometry.Walls).TriangleCount, 0);
-            Assert.Greater(PlanMeshBuilder.Frames(geometry.Walls).TriangleCount, 0);
+            Assert.Greater(PlanMeshBuilder.Floors(level.Rooms).TriangleCount, 0);
+            Assert.Greater(PlanMeshBuilder.Glass(level.Walls).TriangleCount, 0);
+            Assert.Greater(PlanMeshBuilder.Frames(level.Walls).TriangleCount, 0);
         }
     }
 }

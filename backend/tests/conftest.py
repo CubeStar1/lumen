@@ -1,11 +1,11 @@
 import pytest
 from factories import opening, plan, rect
 
-from floorplan.models import OpeningType, PlanSpec
+from floorplan.models import FloorSpec, OpeningType
 
 
 @pytest.fixture
-def two_rooms() -> PlanSpec:
+def two_rooms() -> FloorSpec:
     """Two rooms side by side: r1 is 4 x 3 m, r2 is 3 x 3 m, sharing the wall at x = 4."""
     return plan(
         [rect("r1", 0, 0, 4, 3), rect("r2", 4, 0, 7, 3)],

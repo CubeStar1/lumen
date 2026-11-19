@@ -4,8 +4,10 @@ namespace FloorPlanViz.Data
 {
     public sealed class PlanResponse
     {
-        public PlanSpec Spec { get; set; }
-        public PlanGeometry Geometry { get; set; }
+        /// <summary>The backend's building spec, kept as-is so it can be sent back for edits.</summary>
+        public object Spec { get; set; }
+
+        public BuildingGeometry Geometry { get; set; }
         public List<string> Warnings { get; set; } = new();
     }
 }

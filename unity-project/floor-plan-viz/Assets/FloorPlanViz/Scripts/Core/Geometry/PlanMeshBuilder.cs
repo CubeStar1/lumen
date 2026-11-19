@@ -61,15 +61,15 @@ namespace FloorPlanViz.Geometry
         }
 
         public static MeshData Glass(IEnumerable<WallData> walls) =>
-            Openings(walls, OpeningType.Window, (mesh, frame) =>
+            Openings(walls, o => o == OpeningType.Window, (mesh, frame) =>
                 mesh.AddBox(frame.Centre(frame.Sill, frame.Head), frame.Rotation,
                     new Vector3(GlassThickness, frame.Head - frame.Sill, frame.Width)));
 
         /// <summary>Window frames with a centre mullion, and door jambs with a head.</summary>
         public static MeshData Frames(IEnumerable<WallData> walls)
         {
-            var mesh = Openings(walls, OpeningType.Window, AddWindowFrame);
-            return Openings(walls, OpeningType.Door, AddDoorFrame, mesh);
+            var mesh = Openings(walls, o => o == OpeningType.Window, AddWindowFrame);
+            return Openings(walls, o => o.IsDoor(), AddDoorFrame, mesh);
         }
 
         static MeshData Slabs(IEnumerable<RoomData> rooms, float height)
@@ -116,13 +116,14 @@ namespace FloorPlanViz.Geometry
         static void AddFrameBar(MeshData mesh, OpeningFrame frame, float along, float height, float depth, float barHeight, float barLength) =>
             mesh.AddBox(frame.Centre(height, height, along), frame.Rotation, new Vector3(depth, barHeight, barLength));
 
-        static MeshData Openings(IEnumerable<WallData> walls, OpeningType type, System.Action<MeshData, OpeningFrame> add, MeshData mesh = null)
+        static MeshData Openings(IEnumerable<WallData> walls, System.Func<OpeningType, bool> include, System.Action<MeshData, OpeningFrame> add,
+            MeshData mesh = null)
         {
             mesh ??= new MeshData();
             foreach (var wall in walls)
             {
                 var frame = WallFrame.Of(wall);
-                foreach (var opening in wall.Openings.Where(o => o.Type == type))
+                foreach (var opening in wall.Openings.Where(o => include(o.Type)))
                     add(mesh, new OpeningFrame(frame, opening, wall.Thickness));
             }
             return mesh;

@@ -5,12 +5,12 @@ from openai.types.responses import ResponseInputContentParam
 
 from floorplan.errors import ModelError
 from floorplan.llm.prompts import EDIT_INSTRUCTIONS, EXTRACT_INSTRUCTIONS, REPAIR_TEMPLATE
-from floorplan.models import PlanSpec
+from floorplan.models import FloorSpec
 
 
 @dataclass(frozen=True)
 class Feedback:
-    previous: PlanSpec
+    previous: FloorSpec
     problems: list[str]
 
     def as_text(self) -> str:
@@ -26,16 +26,18 @@ class OpenAIPlanModel:
         self._model = model
         self._reasoning = {"effort": reasoning_effort} if reasoning_effort else openai.omit
 
-    def extract(self, image_url: str, feedback: Feedback | None = None) -> PlanSpec:
+    def extract(self, image_url: str, feedback: Feedback | None = None) -> FloorSpec:
         content: list[ResponseInputContentParam] = [
             {"type": "input_text", "text": "Describe this floor plan."},
             {"type": "input_image", "image_url": image_url, "detail": "high"},
         ]
         return self._parse(EXTRACT_INSTRUCTIONS, content, feedback)
 
-    def edit(self, spec: PlanSpec, instruction: str, feedback: Feedback | None = None) -> PlanSpec:
+    def edit(
+        self, floor: FloorSpec, instruction: str, feedback: Feedback | None = None
+    ) -> FloorSpec:
         content: list[ResponseInputContentParam] = [
-            {"type": "input_text", "text": f"Current plan:\n{spec.model_dump_json()}"},
+            {"type": "input_text", "text": f"Current plan:\n{floor.model_dump_json()}"},
             {"type": "input_text", "text": f"Instruction: {instruction}"},
         ]
         return self._parse(EDIT_INSTRUCTIONS, content, feedback)
@@ -45,7 +47,7 @@ class OpenAIPlanModel:
         instructions: str,
         content: list[ResponseInputContentParam],
         feedback: Feedback | None,
-    ) -> PlanSpec:
+    ) -> FloorSpec:
         if feedback:
             content = [*content, {"type": "input_text", "text": feedback.as_text()}]
         try:
@@ -53,7 +55,7 @@ class OpenAIPlanModel:
                 model=self._model,
                 instructions=instructions,
                 input=[{"role": "user", "content": content}],
-                text_format=PlanSpec,
+                text_format=FloorSpec,
                 reasoning=self._reasoning,
             )
         except openai.APIError as exc:

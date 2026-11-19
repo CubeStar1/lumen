@@ -15,13 +15,15 @@ namespace FloorPlanViz.Api
 
         sealed class EditRequest
         {
-            public PlanSpec Spec { get; set; }
+            public object Spec { get; set; }
             public string Instruction { get; set; }
+            public int Level { get; set; }
         }
 
         sealed class InstructionRequest
         {
             public string Instruction { get; set; }
+            public int Level { get; set; }
         }
 
         sealed class RenameRequest
@@ -62,11 +64,12 @@ namespace FloorPlanViz.Api
             return SendAsync<SavedPlan>(UnityWebRequest.Post(Url("/plans/parse"), form), cancellation);
         }
 
-        public Awaitable<SavedPlan> EditAsync(string id, string instruction, CancellationToken cancellation) =>
-            SendAsync<SavedPlan>(Json("POST", $"/plans/{id}/edit", new InstructionRequest { Instruction = instruction }), cancellation);
+        public Awaitable<SavedPlan> EditAsync(string id, string instruction, int level, CancellationToken cancellation) =>
+            SendAsync<SavedPlan>(Json("POST", $"/plans/{id}/edit", new InstructionRequest { Instruction = instruction, Level = level }), cancellation);
 
-        public Awaitable<PlanResponse> EditUnsavedAsync(PlanSpec spec, string instruction, CancellationToken cancellation) =>
-            SendAsync<PlanResponse>(Json("POST", "/plans/edit", new EditRequest { Spec = spec, Instruction = instruction }), cancellation);
+        public Awaitable<PlanResponse> EditUnsavedAsync(PlanResponse plan, string instruction, int level, CancellationToken cancellation) =>
+            SendAsync<PlanResponse>(Json("POST", "/plans/edit", new EditRequest { Spec = plan.Spec, Instruction = instruction, Level = level }),
+                cancellation);
 
         public Awaitable<SavedPlan> RenameAsync(string id, string name, CancellationToken cancellation) =>
             SendAsync<SavedPlan>(Json("PATCH", $"/plans/{id}", new RenameRequest { Name = name }), cancellation, QuickTimeoutSeconds);

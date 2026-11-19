@@ -11,16 +11,42 @@ class RoomType(StrEnum):
     BEDROOM = "bedroom"
     KITCHEN = "kitchen"
     BATHROOM = "bathroom"
+    TOILET = "toilet"
     DINING = "dining"
     HALLWAY = "hallway"
+    STAIRCASE = "staircase"
     BALCONY = "balcony"
+    PORCH = "porch"
+    TERRACE = "terrace"
     UTILITY = "utility"
+    STORE = "store"
+    GARAGE = "garage"
     OTHER = "other"
 
 
 class OpeningType(StrEnum):
     DOOR = "door"
+    SLIDING_DOOR = "sliding_door"
     WINDOW = "window"
+    OPENING = "opening"
+
+
+class WallKind(StrEnum):
+    EXTERIOR = "exterior"
+    INTERIOR = "interior"
+    PARTITION = "partition"
+    LOW = "low"
+    PARAPET = "parapet"
+
+
+class StairDirection(StrEnum):
+    UP = "up"
+    DOWN = "down"
+
+
+class BuildingKind(StrEnum):
+    FLOOR = "floor"
+    BUILDING = "building"
 
 
 class Point(BaseModel):
@@ -32,7 +58,16 @@ class RoomSpec(BaseModel):
     id: str
     name: str = Field(description="Label as printed on the plan, e.g. 'Bedroom 2'.")
     type: RoomType
+    outdoor: bool = Field(description="True for porches, sit-outs, terraces and open balconies.")
     polygon: list[Point] = Field(description="Room outline in metres, vertices in order.")
+
+
+class WallSpec(BaseModel):
+    id: str
+    start: Point
+    end: Point
+    kind: WallKind
+    thickness: float | None = Field(description="Drawn thickness in metres, or null if unclear.")
 
 
 class OpeningSpec(BaseModel):
@@ -45,11 +80,57 @@ class OpeningSpec(BaseModel):
     width: float = Field(description="Clear width in metres.")
 
 
-class PlanSpec(BaseModel):
-    wall_height: float = Field(description="Floor-to-ceiling height in metres, usually 3.0.")
+class FlightSpec(BaseModel):
+    start: Point = Field(description="Centre of the bottom step's front edge.")
+    end: Point = Field(description="Centre of the top step's back edge.")
+    width: float
+    risers: int
+    via: Point | None = Field(
+        description="A point on the centre line of a curved flight, else null."
+    )
+
+
+class LandingSpec(BaseModel):
+    polygon: list[Point]
+
+
+class StairSpec(BaseModel):
+    id: str
+    direction: StairDirection = Field(description="Whether the stair is drawn going up or down.")
+    flights: list[FlightSpec]
+    landings: list[LandingSpec]
+
+
+class ColumnSpec(BaseModel):
+    position: Point
+    size: float
+
+
+class FloorSpec(BaseModel):
+    name: str = Field(description="Level name, e.g. 'Ground floor'.")
+    height: float = Field(description="Floor-to-ceiling height in metres, usually 3.0.")
     rooms: list[RoomSpec]
+    walls: list[WallSpec] = Field(
+        description="Walls that are not along a room outline: stubs, free-standing and low walls."
+    )
     openings: list[OpeningSpec]
+    stairs: list[StairSpec]
+    columns: list[ColumnSpec]
     notes: str = Field(description="How the scale was determined and anything uncertain.")
+
+
+class LevelSpec(BaseModel):
+    index: int
+    elevation: float
+    slab: float = 0.15
+    offset: Point = Point(x=0, y=0)
+    floor: FloorSpec
+
+
+class BuildingSpec(BaseModel):
+    kind: BuildingKind
+    levels: list[LevelSpec]
+    notes: str = ""
 
 
 class Bounds(BaseModel):
@@ -61,6 +142,7 @@ class Room(BaseModel):
     id: str
     name: str
     type: RoomType
+    outdoor: bool
     polygon: list[Point]
     centroid: Point
     area: float
@@ -79,31 +161,46 @@ class Wall(BaseModel):
     id: str
     start: Point
     end: Point
+    kind: WallKind
     thickness: float
     height: float
     exterior: bool
     openings: list[Opening] = []
 
 
-class PlanGeometry(BaseModel):
-    bounds: Bounds
+class LevelGeometry(BaseModel):
+    index: int
+    name: str
+    elevation: float
+    height: float
     rooms: list[Room]
     walls: list[Wall]
 
 
+class BuildingGeometry(BaseModel):
+    bounds: Bounds
+    levels: list[LevelGeometry]
+
+    @property
+    def rooms(self) -> list[Room]:
+        return [room for level in self.levels for room in level.rooms]
+
+
 class PlanResponse(BaseModel):
-    spec: PlanSpec
-    geometry: PlanGeometry
+    spec: BuildingSpec
+    geometry: BuildingGeometry
     warnings: list[str]
 
 
 class EditRequest(BaseModel):
-    spec: PlanSpec
+    spec: BuildingSpec
     instruction: str = Field(min_length=1, max_length=500)
+    level: int = 0
 
 
 class InstructionRequest(BaseModel):
     instruction: str = Field(min_length=1, max_length=500)
+    level: int = 0
 
 
 class RenameRequest(BaseModel):
@@ -113,6 +210,8 @@ class RenameRequest(BaseModel):
 class PlanSummary(BaseModel):
     id: str
     name: str
+    kind: BuildingKind = BuildingKind.FLOOR
+    level_count: int = 1
     created_at: datetime
     updated_at: datetime
     has_image: bool

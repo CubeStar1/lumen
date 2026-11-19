@@ -19,3 +19,8 @@ class PlanRejectedError(FloorPlanError):
     def __init__(self, problems: list[str]):
         super().__init__("The plan could not be interpreted: " + "; ".join(problems))
         self.problems = problems
+
+
+class LevelNotFoundError(FloorPlanError):
+    def __init__(self, level: int):
+        super().__init__(f"The plan has no level {level}.")

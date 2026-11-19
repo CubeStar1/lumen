@@ -35,14 +35,16 @@ namespace FloorPlanViz.Model
         public Material BaseBoard => baseBoard;
         public Material ShadowCatcher => shadowCatcher;
 
-        public Material Floor(RoomType type)
+        public Material Floor(RoomType type) => Find(type) ?? Find(type.Base()) ?? defaultFloor;
+
+        Material Find(RoomType type)
         {
             foreach (var floor in floors)
             {
                 if (floor.type == type)
                     return floor.material;
             }
-            return defaultFloor;
+            return null;
         }
     }
 }

@@ -7,7 +7,7 @@ from test_service import ScriptedModel
 
 from floorplan.config import Settings, get_settings
 from floorplan.main import app, get_service, get_store
-from floorplan.service import PlanService
+from floorplan.service import PlanService, single_floor
 from floorplan.store import PlanStore
 
 
@@ -41,7 +41,9 @@ def test_parse_saves_and_returns_the_plan(client):
     record = upload(client)
 
     assert {"spec", "geometry", "warnings"} <= record["plan"].keys()
-    assert len(record["plan"]["geometry"]["walls"]) == 5
+    assert len(record["plan"]["geometry"]["levels"][0]["walls"]) == 5
+    assert record["kind"] == "floor"
+    assert record["level_count"] == 1
     assert record["name"] == "2-room plan"
     assert record["room_count"] == 2
     assert record["has_image"]
@@ -96,9 +98,22 @@ def test_edit_saved_plan_updates_it(client):
 
 
 def test_edit_unsaved_plan_round_trips_the_spec(client, two_rooms):
-    payload = {"spec": two_rooms.model_dump(mode="json"), "instruction": "add a window"}
+    payload = {
+        "spec": single_floor(two_rooms).model_dump(mode="json"),
+        "instruction": "add a window",
+    }
 
     response = client.post("/plans/edit", json=payload)
 
     assert response.status_code == 200
-    assert response.json()["spec"]["rooms"][0]["id"] == "r1"
+    assert response.json()["spec"]["levels"][0]["floor"]["rooms"][0]["id"] == "r1"
+
+
+def test_edit_of_a_missing_level_is_not_found(client, two_rooms):
+    payload = {
+        "spec": single_floor(two_rooms).model_dump(mode="json"),
+        "instruction": "add a window",
+        "level": 3,
+    }
+
+    assert client.post("/plans/edit", json=payload).status_code == 404

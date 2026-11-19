@@ -6,7 +6,7 @@ namespace FloorPlanViz.UI
     /// <summary>How each room type is shown in 2D: fill colour, display name and icon.</summary>
     public static class RoomStyle
     {
-        public static Color Colour(RoomType type) => type switch
+        public static Color Colour(RoomType type) => type.Base() switch
         {
             RoomType.Living => Theme.Hex(0xF6D3A5),
             RoomType.Bedroom => Theme.Hex(0xBCD2F7),
@@ -29,10 +29,16 @@ namespace FloorPlanViz.UI
             RoomType.Hallway => "Hallway",
             RoomType.Balcony => "Balcony",
             RoomType.Utility => "Utility",
+            RoomType.Toilet => "Toilet",
+            RoomType.Staircase => "Staircase",
+            RoomType.Porch => "Porch",
+            RoomType.Terrace => "Terrace",
+            RoomType.Store => "Store",
+            RoomType.Garage => "Garage",
             _ => "Other",
         };
 
-        public static string Icon(RoomType type) => type switch
+        public static string Icon(RoomType type) => type.Base() switch
         {
             RoomType.Living => Icons.Weekend,
             RoomType.Bedroom => Icons.Bed,

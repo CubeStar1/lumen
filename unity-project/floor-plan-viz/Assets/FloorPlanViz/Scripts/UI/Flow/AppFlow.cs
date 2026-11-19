@@ -207,14 +207,15 @@ namespace FloorPlanViz.UI
         {
             editSheet.SetVisible(false);
             var document = current;
+            var level = document.Plan.Geometry.Ground.Index;
             if (document.IsSaved)
             {
-                await requests.Run("Applying your change", EditStages, token => api.EditAsync(document.Id, instruction, token),
+                await requests.Run("Applying your change", EditStages, token => api.EditAsync(document.Id, instruction, level, token),
                     saved => ShowEdited(document, saved.Plan));
             }
             else
             {
-                await requests.Run("Applying your change", EditStages, token => api.EditUnsavedAsync(document.Plan.Spec, instruction, token),
+                await requests.Run("Applying your change", EditStages, token => api.EditUnsavedAsync(document.Plan, instruction, level, token),
                     plan => ShowEdited(document, plan));
             }
         }

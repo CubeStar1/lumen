@@ -45,7 +45,11 @@ def test_partial_overlap_splits_into_interior_and_exterior():
 def test_l_shaped_room_has_six_walls():
     corners = [(0, 0), (6, 0), (6, 2), (3, 2), (3, 5), (0, 5)]
     room = RoomSpec(
-        id="r1", name="L", type=RoomType.LIVING, polygon=[Point(x=x, y=y) for x, y in corners]
+        id="r1",
+        name="L",
+        type=RoomType.LIVING,
+        outdoor=False,
+        polygon=[Point(x=x, y=y) for x, y in corners],
     )
 
     walls = derive_walls([room])

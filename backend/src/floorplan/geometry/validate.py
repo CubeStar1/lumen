@@ -3,7 +3,7 @@ from itertools import combinations
 
 from shapely.geometry import Polygon
 
-from floorplan.models import EXTERIOR, PlanSpec
+from floorplan.models import EXTERIOR, FloorSpec
 
 MIN_ROOM_AREA = 1.0
 MAX_OVERLAP_RATIO = 0.05
@@ -15,7 +15,7 @@ class ValidationReport:
     warnings: list[str] = field(default_factory=list)
 
 
-def validate(spec: PlanSpec) -> ValidationReport:
+def validate(spec: FloorSpec) -> ValidationReport:
     report = ValidationReport()
     if not spec.rooms:
         report.errors.append("No rooms were found.")
@@ -55,7 +55,7 @@ def _check_overlaps(shapes: dict[str, Polygon], report: ValidationReport) -> Non
             report.warnings.append(f"Rooms {id_a} and {id_b} overlap by {overlap:.1f} m².")
 
 
-def _check_opening_rooms(spec: PlanSpec, report: ValidationReport) -> None:
+def _check_opening_rooms(spec: FloorSpec, report: ValidationReport) -> None:
     known = {r.id for r in spec.rooms} | {EXTERIOR}
     for opening in spec.openings:
         unknown = [r for r in opening.rooms if r not in known]

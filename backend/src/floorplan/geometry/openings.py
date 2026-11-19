@@ -75,7 +75,7 @@ def _fit(spec: OpeningSpec, candidate: _Candidate) -> Opening | None:
         return None
     half = width / 2 + END_CLEARANCE
     offset = min(max(candidate.offset, half), span - half)
-    sill, head = (0.0, DOOR_HEAD) if spec.type == OpeningType.DOOR else (WINDOW_SILL, WINDOW_HEAD)
+    sill, head = (WINDOW_SILL, WINDOW_HEAD) if spec.type == OpeningType.WINDOW else (0.0, DOOR_HEAD)
     return Opening(
         id=spec.id,
         type=spec.type,

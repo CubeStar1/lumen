@@ -3,20 +3,22 @@ from factories import plan
 
 from floorplan.errors import PlanRejectedError
 from floorplan.llm.client import Feedback
-from floorplan.models import PlanSpec
-from floorplan.service import PlanService
+from floorplan.models import FloorSpec
+from floorplan.service import PlanService, single_floor
 
 
 class ScriptedModel:
-    def __init__(self, *answers: PlanSpec):
+    def __init__(self, *answers: FloorSpec):
         self.answers = list(answers)
         self.feedback: list[Feedback | None] = []
 
-    def extract(self, image_url: str, feedback: Feedback | None = None) -> PlanSpec:
+    def extract(self, image_url: str, feedback: Feedback | None = None) -> FloorSpec:
         self.feedback.append(feedback)
         return self.answers.pop(0)
 
-    def edit(self, spec: PlanSpec, instruction: str, feedback: Feedback | None = None) -> PlanSpec:
+    def edit(
+        self, floor: FloorSpec, instruction: str, feedback: Feedback | None = None
+    ) -> FloorSpec:
         return self.extract("", feedback)
 
 
@@ -47,6 +49,6 @@ def test_repeated_invalid_answer_is_rejected():
 
 
 def test_edit_goes_through_the_same_pipeline(two_rooms):
-    response = PlanService(ScriptedModel(two_rooms)).edit(two_rooms, "make it bigger")
+    response = PlanService(ScriptedModel(two_rooms)).edit(single_floor(two_rooms), "bigger")
 
-    assert response.spec.rooms[0].id == "r1"
+    assert response.spec.levels[0].floor.rooms[0].id == "r1"

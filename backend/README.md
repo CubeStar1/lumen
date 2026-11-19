@@ -84,7 +84,11 @@ uv run ruff check . && uv run ruff format --check .
 Buildings (`building.py`): one call lists a sheet's drawings with their boxes and rotation
 (`sheet.py`); each floor plan is cut from the full-resolution upload, turned upright and read in
 parallel. Floors are stacked lowest first, each shifted onto the one below (`geometry/align`: the
-shift whose outer walls land most on the walls below), and a terrace or roof level gets parapets.
+placement where its outline, walls and stairs land most on the floor below, searched over every
+overlapping shift and quarter turn; between photos the scale is fitted too), and a terrace or roof
+level gets parapets. Floors on one sheet share one scale, pooled from all their printed sizes.
+The model's answers are saved with the plan (`data/<id>/answers.json`); `uv run try-plan data/<id>`
+rebuilds the building from them with the current pipeline, without calling the model.
 
 Specs with `derive_walls: true` (older plans and the hand-written sample) instead derive walls from
 room outlines, plus their extra stub and low walls.

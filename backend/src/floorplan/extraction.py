@@ -109,8 +109,12 @@ class FloorExtraction(BaseModel):
     notes: str = Field(description="Anything uncertain about the drawing.")
 
 
-def to_floor(extraction: FloorExtraction) -> FloorSpec:
-    scale, note = drawing_scale(extraction)
+Scale = tuple[float, str]
+
+
+def to_floor(extraction: FloorExtraction, given: Scale | None = None) -> FloorSpec:
+    """The extraction in metres, at `given` metres per pixel or else its own drawing scale."""
+    scale, note = given or drawing_scale(extraction)
 
     def p(point: Point) -> Point:
         return Point(x=round(point.x * scale, 4), y=round(point.y * scale, 4))
@@ -179,27 +183,42 @@ def to_floor(extraction: FloorExtraction) -> FloorSpec:
     )
 
 
-def drawing_scale(extraction: FloorExtraction) -> tuple[float, str]:
+def drawing_scale(extraction: FloorExtraction) -> Scale:
     """Metres per pixel and a note saying how it was found."""
-    dimensions = [
-        Dimension(d.text, length(sub(vec(d.end), vec(d.start)))) for d in extraction.dimensions
-    ]
-    for source, found in (
-        ("printed dimension", dimensions),
-        ("printed room size", room_size_dimensions(extraction)),
-    ):
-        estimate = estimate_scale(found)
-        if estimate is not None:
-            note = f"Scale from {estimate.used} {source}(s)"
-            if estimate.outliers:
-                note += f"; ignored {', '.join(estimate.outliers)} as inconsistent"
-            return estimate.metres_per_unit, note + "."
+    found = scale_from_sizes(size_samples(extraction))
+    if found is not None:
+        return found
 
     if extraction.metres_per_pixel > 0:
         return extraction.metres_per_pixel, "Scale estimated by the model; no sizes were readable."
     doors = [o.width for o in extraction.openings if o.type == OpeningType.DOOR and o.width > 0]
     scale = DOOR_WIDTH / median(doors) if doors else 0.01
     return scale, f"Scale from door widths (assumed {DOOR_WIDTH} m)."
+
+
+SIZE_SOURCES = ("printed dimension", "printed room size")
+
+
+def size_samples(extraction: FloorExtraction) -> tuple[list[Dimension], list[Dimension]]:
+    """The drawing's dimension lines and its printed room sizes, measured in its pixels."""
+    lines = [
+        Dimension(d.text, length(sub(vec(d.end), vec(d.start)))) for d in extraction.dimensions
+    ]
+    return lines, room_size_dimensions(extraction)
+
+
+def scale_from_sizes(
+    samples: tuple[list[Dimension], list[Dimension]], what: str = ""
+) -> Scale | None:
+    """Metres per pixel from dimension lines, or failing those from room sizes."""
+    for source, found in zip(SIZE_SOURCES, samples, strict=True):
+        estimate = estimate_scale(found)
+        if estimate is not None:
+            note = f"Scale from {estimate.used} {source}(s){what}"
+            if estimate.outliers:
+                note += f"; ignored {', '.join(estimate.outliers)} as inconsistent"
+            return estimate.metres_per_unit, note + "."
+    return None
 
 
 def room_size_dimensions(extraction: FloorExtraction) -> list[Dimension]:

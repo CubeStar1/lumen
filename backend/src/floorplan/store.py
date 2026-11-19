@@ -13,6 +13,7 @@ from floorplan.models import BuildingKind, PlanRecord, PlanResponse, PlanSummary
 RECORD = "record.json"
 IMAGE = "image.jpg"
 THUMBNAIL = "thumbnail.jpg"
+ANSWERS = "answers.json"
 
 _ID_PATTERN = re.compile(r"^[0-9a-f]{12}$")
 
@@ -25,8 +26,14 @@ class PlanStore:
         self._lock = threading.Lock()
 
     def create(
-        self, plan: PlanResponse, image: bytes | None = None, thumbnail: bytes | None = None
+        self,
+        plan: PlanResponse,
+        image: bytes | None = None,
+        thumbnail: bytes | None = None,
+        answers: str | None = None,
     ) -> PlanRecord:
+        """Saves a new plan. `answers` is the model's raw reading, kept so the plan can be
+        rebuilt later without asking the model again."""
         now = datetime.now(UTC)
         plan_id = uuid.uuid4().hex[:12]
         record = _record(plan_id, default_name(plan), now, now, image is not None, plan)
@@ -37,6 +44,8 @@ class PlanStore:
                 (folder / IMAGE).write_bytes(image)
             if thumbnail is not None:
                 (folder / THUMBNAIL).write_bytes(thumbnail)
+            if answers is not None:
+                (folder / ANSWERS).write_text(answers, "utf-8")
             _write(folder / RECORD, record)
         return record
 

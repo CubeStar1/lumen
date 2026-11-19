@@ -1,6 +1,7 @@
 """Converts specs from image convention (origin top-left, +y down) to the world frame used by
 the geometry and by Unity: +y up, with the whole building's footprint centred on the origin."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from shapely.geometry import Polygon
@@ -32,39 +33,66 @@ def building_frame(spec: BuildingSpec) -> Frame:
 
 
 def to_world(floor: FloorSpec, frame: Frame, offset: Point) -> FloorSpec:
-    def convert(p: Point) -> Point:
-        return frame.convert(p, offset)
+    moved = map_floor(floor, lambda p: frame.convert(p, offset))
+    rooms = [r.model_copy(update={"polygon": counter_clockwise(r.polygon)}) for r in moved.rooms]
+    return moved.model_copy(update={"rooms": rooms})
+
+
+def map_floor(floor: FloorSpec, move: Callable[[Point], Point], lengths: float = 1.0) -> FloorSpec:
+    """The floor with every point moved by `move` and every width multiplied by `lengths`."""
+
+    def size(value: float) -> float:
+        return round(value * lengths, 4)
 
     rooms = [
-        r.model_copy(update={"polygon": counter_clockwise([convert(p) for p in r.polygon])})
+        r.model_copy(
+            update={
+                "polygon": [move(p) for p in r.polygon],
+                "label": move(r.label) if r.label else None,
+            }
+        )
         for r in floor.rooms
     ]
     walls = [
-        w.model_copy(update={"start": convert(w.start), "end": convert(w.end)}) for w in floor.walls
+        w.model_copy(
+            update={
+                "start": move(w.start),
+                "end": move(w.end),
+                "thickness": size(w.thickness) if w.thickness else None,
+            }
+        )
+        for w in floor.walls
     ]
-    openings = [o.model_copy(update={"position": convert(o.position)}) for o in floor.openings]
+    openings = [
+        o.model_copy(update={"position": move(o.position), "width": size(o.width)})
+        for o in floor.openings
+    ]
     stairs = [
         s.model_copy(
             update={
                 "flights": [
                     f.model_copy(
                         update={
-                            "start": convert(f.start),
-                            "end": convert(f.end),
-                            "via": convert(f.via) if f.via else None,
+                            "start": move(f.start),
+                            "end": move(f.end),
+                            "via": move(f.via) if f.via else None,
+                            "width": size(f.width),
                         }
                     )
                     for f in s.flights
                 ],
                 "landings": [
-                    LandingSpec(polygon=[convert(p) for p in landing.polygon])
+                    LandingSpec(polygon=[move(p) for p in landing.polygon])
                     for landing in s.landings
                 ],
             }
         )
         for s in floor.stairs
     ]
-    columns = [c.model_copy(update={"position": convert(c.position)}) for c in floor.columns]
+    columns = [
+        c.model_copy(update={"position": move(c.position), "size": size(c.size)})
+        for c in floor.columns
+    ]
     return floor.model_copy(
         update={
             "rooms": rooms,

@@ -110,6 +110,16 @@ opening recall 1.00). The curved-stair case was dropped from the set (its refere
 - Not done (V8): iPad run of both example plans, hip roofs (the extraction has no roof data yet), per-floor
   checklist in the progress card (it shows the live stage text instead), 90/180 degree alignment between crops.
 
+**Floor alignment fixes (2026-11-19, untested live).** A saved 3-floor building showed floors 3-4% apart in size
+(each floor had its own scale) and the terrace 2 m / 5 m off (only its stair headroom counted as exterior walls).
+- `geometry/align.py` rewritten: matches the whole outline (parapets included), all walls and the stairs;
+  coarse grid over every overlapping shift, then refined; scored at 0.2 / 0.08 / 0.03 m so it peaks on coincidence;
+  tries quarter turns (taken only if clearly better); fits scale 0.92-1.08 between photos.
+- Sheet floors share one scale pooled from every floor's dimensions (falling back to room sizes), converted
+  through each crop's resize factor; a floor whose own dimensions disagree by >15% keeps its own.
+- Building answers are saved with the plan (`answers.json`); `uv run try-plan data/<id>` rebuilds for free.
+  Buildings parsed before this change have no answers file.
+
 ## Where things stand
 
 | Milestone | State |

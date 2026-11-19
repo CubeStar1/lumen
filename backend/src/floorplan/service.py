@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Protocol
 
 from pydantic import BaseModel
@@ -34,20 +35,18 @@ class PlanService:
         return self._model
 
     def parse(self, image: PreparedImage) -> PlanResponse:
-        floor, warnings = self.read_floor(image)
-        return assemble(single_floor(floor), warnings)
+        read = self.read_floor(image)
+        return assemble(single_floor(read.floor), read.warnings)
 
-    def read_floor(
-        self, image: PreparedImage, hint: str | None = None
-    ) -> tuple[FloorSpec, list[str]]:
-        floor, report = self._resolve(
+    def read_floor(self, image: PreparedImage, hint: str | None = None) -> "FloorRead":
+        answer, floor, report = self._resolve(
             lambda feedback: self._model.extract(image, feedback, hint), to_floor
         )
-        return floor, report.warnings
+        return FloorRead(floor, report.warnings, answer)
 
     def edit(self, spec: BuildingSpec, instruction: str, level: int = 0) -> PlanResponse:
         target = _level(spec, level)
-        floor, report = self._resolve(
+        _, floor, report = self._resolve(
             lambda feedback: self._model.edit(target.floor, instruction, feedback),
             lambda floor: floor,
         )
@@ -58,16 +57,25 @@ class PlanService:
 
     def _resolve[A: BaseModel](
         self, ask: Callable[[Feedback | None], A], convert: Callable[[A], FloorSpec]
-    ) -> tuple[FloorSpec, ValidationReport]:
+    ) -> tuple[A, FloorSpec, ValidationReport]:
         """Asks the model, retrying once with the problems found in its first answer."""
         answer = ask(None)
-        floor, report = _prepare(convert(answer))
+        floor, report = prepare_floor(convert(answer))
         if report.errors:
             answer = ask(Feedback(answer, report.errors))
-            floor, report = _prepare(convert(answer))
+            floor, report = prepare_floor(convert(answer))
         if report.errors:
             raise PlanRejectedError(report.errors)
-        return floor, report
+        return answer, floor, report
+
+
+@dataclass(frozen=True)
+class FloorRead:
+    """A floor as read: the checked plan, its warnings and the model's answer it came from."""
+
+    floor: FloorSpec
+    warnings: list[str]
+    answer: FloorExtraction
 
 
 def single_floor(floor: FloorSpec) -> BuildingSpec:
@@ -79,7 +87,7 @@ def single_floor(floor: FloorSpec) -> BuildingSpec:
 def from_spec(spec: BuildingSpec) -> PlanResponse:
     levels, warnings = [], []
     for level in spec.levels:
-        floor, report = _prepare(level.floor)
+        floor, report = prepare_floor(level.floor)
         if report.errors:
             raise PlanRejectedError(report.errors)
         levels.append(level.model_copy(update={"floor": floor}))
@@ -94,7 +102,8 @@ def _level(spec: BuildingSpec, index: int) -> LevelSpec:
     return match
 
 
-def _prepare(floor: FloorSpec) -> tuple[FloorSpec, ValidationReport]:
+def prepare_floor(floor: FloorSpec) -> tuple[FloorSpec, ValidationReport]:
+    """Cleans a floor up, completes its rooms from its walls and checks it."""
     cleaned, warnings = complete(normalize(floor))
     report = validate(cleaned)
     report.warnings[:0] = warnings

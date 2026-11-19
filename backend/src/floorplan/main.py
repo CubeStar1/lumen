@@ -139,18 +139,23 @@ def start_job(
     )
 
     def work(progress: JobProgress) -> str:
-        if kind == ParseKind.SHEET:
-            plan = reader.from_sheet(pictures[0], progress)
-        elif kind == ParseKind.PHOTOS:
-            plan = reader.from_photos(pictures, progress)
-        else:
+        answers = None
+        if kind == ParseKind.FLOOR:
             progress.plan([READING_PLAN])
             progress.start(READING_PLAN)
             plan = service.parse(prepare(pictures[0], settings.max_image_side))
+        else:
+            read = (
+                reader.from_sheet(pictures[0], progress)
+                if kind == ParseKind.SHEET
+                else reader.from_photos(pictures, progress)
+            )
+            plan, answers = read.response, read.answers.model_dump_json()
         record = store.create(
             plan,
             image=to_jpeg(pictures[0], stored_side),
             thumbnail=to_jpeg(pictures[0], settings.thumbnail_side),
+            answers=answers,
         )
         return record.id
 

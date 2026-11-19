@@ -5,10 +5,27 @@ from factories import plan, rect, two_room_drawing, wall
 from PIL import Image
 from test_service import ScriptedModel
 
-from floorplan.building import BuildingReader, level_name, stack
-from floorplan.geometry.align import align
+from floorplan.building import (
+    BuildingAnswers,
+    BuildingReader,
+    BuildingSource,
+    FloorAnswer,
+    level_name,
+    rebuild,
+    shared_scale,
+    stack,
+)
+from floorplan.geometry.align import align, place
 from floorplan.jobs import JobBoard, JobState, StageState
-from floorplan.models import BuildingKind, WallKind
+from floorplan.models import (
+    BuildingKind,
+    FlightSpec,
+    FloorSpec,
+    Point,
+    StairDirection,
+    StairSpec,
+    WallKind,
+)
 from floorplan.service import PlanService
 from floorplan.sheet import (
     Box,
@@ -158,9 +175,10 @@ def test_sheet_is_read_floor_by_floor_with_hints_and_stages():
     model = ScriptedModel(two_room_drawing(), sheet=sheet_reading())
     stages = Stages()
 
-    response = BuildingReader(PlanService(model), 2048).from_sheet(
+    read = BuildingReader(PlanService(model), 2048).from_sheet(
         Image.new("RGB", (1600, 600)), stages
     )
+    response = read.response
 
     assert [lv.floor.name for lv in response.spec.levels] == ["Ground floor", "First floor"]
     assert [lv.elevation for lv in response.spec.levels] == [0, 3.2]
@@ -175,8 +193,10 @@ def test_photos_are_ordered_by_the_floor_names_the_model_reads():
     upper = two_room_drawing().model_copy(update={"name": "First floor"})
     model = ScriptedModel(upper, two_room_drawing())
 
-    response = BuildingReader(PlanService(model), 2048).from_photos(
-        [Image.new("RGB", (100, 100))] * 2, Stages()
+    response = (
+        BuildingReader(PlanService(model), 2048)
+        .from_photos([Image.new("RGB", (100, 100))] * 2, Stages())
+        .response
     )
 
     assert [lv.floor.name for lv in response.spec.levels] == ["Ground floor", "First floor"]
@@ -219,3 +239,127 @@ def test_failed_job_keeps_the_error():
 
     assert job.state == JobState.FAILED
     assert "boom" in job.error
+
+
+def ring_floor(corners, kind=WallKind.EXTERIOR, name="Floor"):
+    walls = [
+        wall(f"w{i + 1}", a, b, kind)
+        for i, (a, b) in enumerate(zip(corners, corners[1:] + corners[:1], strict=True))
+    ]
+    room = rect("r1", 0, 0, 1, 1).model_copy(
+        update={"polygon": [Point(x=x, y=y) for x, y in corners]}
+    )
+    return FloorSpec(
+        name=name,
+        height=3.0,
+        derive_walls=False,
+        rooms=[room],
+        walls=walls,
+        openings=[],
+        stairs=[],
+        columns=[],
+        notes="",
+    )
+
+
+L_SHAPE = [(0, 0), (10, 0), (10, 4), (4, 4), (4, 12), (0, 12)]
+
+
+def moved(corners, dx, dy):
+    return [(x + dx, y + dy) for x, y in corners]
+
+
+def straight_stair(x, y):
+    return StairSpec(
+        id="s1",
+        direction=StairDirection.UP,
+        flights=[
+            FlightSpec(
+                start=Point(x=x, y=y), end=Point(x=x, y=y + 3), width=1.0, risers=18, via=None
+            )
+        ],
+        landings=[],
+    )
+
+
+def test_terrace_lines_up_by_its_parapets_and_stair_not_its_headroom():
+    lower = ring_floor(L_SHAPE)
+    lower.stairs.append(straight_stair(2, 6))
+    terrace = ring_floor(moved(L_SHAPE, 3.7, -1.2), WallKind.PARAPET, "Terrace")
+    terrace.rooms[0] = terrace.rooms[0].model_copy(update={"outdoor": True})
+    headroom = [(4.7, 3.8), (6.7, 3.8), (6.7, 8.8), (4.7, 8.8)]
+    terrace.walls += ring_floor(headroom).walls
+    terrace.stairs.append(straight_stair(5.7, 4.8))
+
+    fit = align(lower, terrace)
+
+    assert fit.confident and fit.rotation == 0
+    assert (fit.offset.x, fit.offset.y) == pytest.approx((-3.7, 1.2), abs=0.03)
+
+
+def test_quarter_turned_floor_is_turned_back():
+    lower = ring_floor(L_SHAPE)
+    turned = [(-y, x) for x, y in L_SHAPE]
+    upper = ring_floor(moved(turned, 20, 5))
+
+    fit = align(lower, upper)
+    placed = place(upper, fit)
+
+    assert fit.rotation in (90, 270)
+    corners = {
+        (round(w.start.x + fit.offset.x, 1), round(w.start.y + fit.offset.y, 1))
+        for w in placed.walls
+    }
+    assert corners == {(float(x), float(y)) for x, y in L_SHAPE}
+
+
+def test_photo_drawn_at_another_scale_is_rescaled():
+    lower = ring_floor(L_SHAPE)
+    upper = ring_floor([(x * 1.06 + 2, y * 1.06 + 1) for x, y in L_SHAPE])
+
+    fixed = align(lower, upper, fit_scale=True)
+    kept = align(lower, upper, fit_scale=False)
+
+    assert fixed.scale == pytest.approx(0.94, abs=0.011)
+    assert fixed.score > kept.score
+
+
+def answer(scale, dimensions, name):
+    extraction = two_room_drawing().model_copy(update={"name": name, "dimensions": dimensions})
+    return FloorAnswer(name=name, roof=False, image_scale=scale, extraction=extraction)
+
+
+def test_sheet_floors_share_one_scale_even_without_dimensions_of_their_own():
+    ground = answer(1.0, two_room_drawing().dimensions, "Ground floor")
+    first = answer(1.0, [], "First floor")
+    first.extraction.metres_per_pixel = 0.05
+    answers = BuildingAnswers(source=BuildingSource.SHEET, sheet=None, floors=[ground, first])
+
+    levels = rebuild(answers).spec.levels
+
+    widths = [
+        max(w.end.x for w in lv.floor.walls) - min(w.start.x for w in lv.floor.walls)
+        for lv in levels
+    ]
+    assert widths == pytest.approx([7.0, 7.0], abs=0.05)
+    assert "across every floor" in levels[1].floor.notes
+
+
+def test_shared_scale_allows_for_crops_shown_at_different_sizes():
+    floors = [answer(1.0, two_room_drawing().dimensions, "Ground floor"), answer(0.5, [], "First")]
+
+    metres_per_sheet_pixel, _ = shared_scale(floors)
+
+    assert metres_per_sheet_pixel == pytest.approx(0.01)
+
+
+def test_saved_answers_rebuild_the_same_building():
+    answers = BuildingAnswers(
+        source=BuildingSource.PHOTOS,
+        sheet=None,
+        floors=[answer(1.0, two_room_drawing().dimensions, "Ground floor")],
+    )
+
+    again = BuildingAnswers.model_validate_json(answers.model_dump_json())
+
+    assert rebuild(again).spec == rebuild(answers).spec

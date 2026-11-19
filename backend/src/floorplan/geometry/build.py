@@ -2,13 +2,15 @@ from shapely.geometry import Polygon
 
 from floorplan.geometry.frame import Frame, building_frame, to_world
 from floorplan.geometry.openings import attach_openings
-from floorplan.geometry.vec import point
+from floorplan.geometry.regions import wall_sides
+from floorplan.geometry.vec import point, vec
 from floorplan.geometry.wallgraph import connect
 from floorplan.geometry.walls import derive_walls
 from floorplan.models import (
     Bounds,
     BuildingGeometry,
     BuildingSpec,
+    FloorSpec,
     LevelGeometry,
     LevelSpec,
     Point,
@@ -45,9 +47,26 @@ def build_building(spec: BuildingSpec) -> tuple[BuildingGeometry, list[str]]:
 
 def build_level(level: LevelSpec, frame: Frame) -> tuple[LevelGeometry, list[str]]:
     floor = to_world(level.floor, frame, level.offset)
+    walls, wall_rooms = _outline_walls(floor) if floor.derive_walls else _listed_walls(floor)
+    warnings = attach_openings(walls, wall_rooms, floor.openings)
+    geometry = LevelGeometry(
+        index=level.index,
+        name=floor.name,
+        elevation=level.elevation,
+        height=floor.height,
+        rooms=[_room(r) for r in floor.rooms],
+        walls=walls,
+    )
+    return geometry, warnings
+
+
+WallsWithRooms = tuple[list[Wall], dict[str, frozenset[str]]]
+
+
+def _outline_walls(floor: FloorSpec) -> WallsWithRooms:
+    """Walls along the indoor room outlines, plus the floor's extra walls joined onto them."""
     walls: list[Wall] = []
     wall_rooms: dict[str, frozenset[str]] = {}
-
     for segment in derive_walls([r for r in floor.rooms if not r.outdoor]):
         kind = WallKind.EXTERIOR if segment.exterior else WallKind.INTERIOR
         wall = Wall(
@@ -67,17 +86,27 @@ def build_level(level: LevelSpec, frame: Frame) -> tuple[LevelGeometry, list[str
         wall = wall.model_copy(update={"id": f"w{len(walls) + 1}"})
         walls.append(wall)
         wall_rooms[wall.id] = frozenset()
+    return walls, wall_rooms
 
-    warnings = attach_openings(walls, wall_rooms, floor.openings)
-    geometry = LevelGeometry(
-        index=level.index,
-        name=floor.name,
-        elevation=level.elevation,
-        height=floor.height,
-        rooms=[_room(r) for r in floor.rooms],
-        walls=walls,
-    )
-    return geometry, warnings
+
+def _listed_walls(floor: FloorSpec) -> WallsWithRooms:
+    """Every wall as listed, with exterior or interior decided by the rooms on either side."""
+    rooms = {
+        r.id: Polygon([(p.x, p.y) for p in r.polygon])
+        for r in floor.rooms
+        if not r.outdoor and len(r.polygon) >= 3
+    }
+    segments = [(vec(w.start), vec(w.end)) for w in floor.walls]
+    walls: list[Wall] = []
+    wall_rooms: dict[str, frozenset[str]] = {}
+    for spec, (left, right) in zip(floor.walls, wall_sides(segments, rooms), strict=True):
+        kind = spec.kind
+        if kind in (WallKind.EXTERIOR, WallKind.INTERIOR):
+            kind = WallKind.EXTERIOR if not left or not right else WallKind.INTERIOR
+        wall = _extra_wall(spec.model_copy(update={"kind": kind}), spec.id, floor.height)
+        walls.append(wall)
+        wall_rooms[wall.id] = left | right
+    return walls, wall_rooms
 
 
 def _extra_wall(spec: WallSpec, wall_id: str, floor_height: float) -> Wall:

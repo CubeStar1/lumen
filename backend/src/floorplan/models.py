@@ -59,6 +59,7 @@ class RoomSpec(BaseModel):
     name: str = Field(description="Label as printed on the plan, e.g. 'Bedroom 2'.")
     type: RoomType
     outdoor: bool = Field(description="True for porches, sit-outs, terraces and open balconies.")
+    label: Point | None = Field(description="A point inside the room, or null.")
     polygon: list[Point] = Field(description="Room outline in metres, vertices in order.")
 
 
@@ -73,6 +74,7 @@ class WallSpec(BaseModel):
 class OpeningSpec(BaseModel):
     id: str
     type: OpeningType
+    wall: str | None = Field(description="Id of the wall the opening is in, or null.")
     rooms: list[str] = Field(
         description=f"The two room ids this opening connects; use '{EXTERIOR}' for the outside."
     )
@@ -109,10 +111,14 @@ class ColumnSpec(BaseModel):
 class FloorSpec(BaseModel):
     name: str = Field(description="Level name, e.g. 'Ground floor'.")
     height: float = Field(description="Floor-to-ceiling height in metres, usually 3.0.")
-    rooms: list[RoomSpec]
-    walls: list[WallSpec] = Field(
-        description="Walls that are not along a room outline: stubs, free-standing and low walls."
+    derive_walls: bool = Field(
+        description=(
+            "Keep as given. True: walls follow the room outlines and `walls` lists only stubs and "
+            "low walls. False: `walls` lists every wall and rooms are found from them."
+        )
     )
+    rooms: list[RoomSpec]
+    walls: list[WallSpec]
     openings: list[OpeningSpec]
     stairs: list[StairSpec]
     columns: list[ColumnSpec]

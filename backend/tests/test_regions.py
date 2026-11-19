@@ -1,6 +1,6 @@
 from shapely.geometry import Polygon
 
-from floorplan.geometry.regions import Label, assign, exterior_flags, faces
+from floorplan.geometry.regions import Label, assign, faces, wall_sides
 
 OUTER = [((0, 0), (8, 0)), ((8, 0), (8, 5)), ((8, 5), (0, 5)), ((0, 5), (0, 0))]
 SPLIT = [((5, 0), (5, 5))]
@@ -45,9 +45,14 @@ def test_unlabelled_small_faces_are_dropped_and_large_ones_kept():
     assert sorted(round(r.shape.area) for r in regions) == [14, 25]
 
 
-def test_walls_with_outside_on_one_side_are_exterior():
-    rooms = [Polygon([(0, 0), (5, 0), (5, 5), (0, 5)]), Polygon([(5, 0), (8, 0), (8, 5), (5, 5)])]
+def test_wall_sides_name_the_rooms_either_side():
+    rooms = {
+        "a": Polygon([(0, 0), (5, 0), (5, 5), (0, 5)]),
+        "b": Polygon([(5, 0), (8, 0), (8, 5), (5, 5)]),
+    }
 
-    flags = exterior_flags(OUTER + SPLIT, rooms)
+    sides = wall_sides(OUTER + SPLIT, rooms)
 
-    assert flags == [True, True, True, True, False]
+    faces_outside = [not left or not right for left, right in sides]
+    assert faces_outside == [True, True, True, True, False]
+    assert set(sides[4][0] | sides[4][1]) == {"a", "b"}

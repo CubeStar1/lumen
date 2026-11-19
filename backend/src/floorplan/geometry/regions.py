@@ -70,18 +70,23 @@ def assign(labels: list[Label], walls: list[Segment]) -> tuple[list[Region], lis
     return regions, warnings
 
 
-def exterior_flags(walls: list[Segment], indoor: list[Polygon]) -> list[bool]:
-    """A wall is exterior when one side of its midpoint lies outside every indoor space."""
-    inside = unary_union(indoor) if indoor else Polygon()
-    flags = []
+def wall_sides(
+    walls: list[Segment], rooms: dict[str, Polygon]
+) -> list[tuple[frozenset[str], frozenset[str]]]:
+    """The rooms just left and right of each wall's midpoint. A wall with no room on one side
+    faces the outside."""
+    sides = []
     for start, end in walls:
         middle = scale(add(start, end), 0.5)
         direction = normalized(sub(end, start))
         normal = (-direction[1], direction[0])
-        left = ShapelyPoint(add(middle, scale(normal, SIDE_PROBE)))
-        right = ShapelyPoint(add(middle, scale(normal, -SIDE_PROBE)))
-        flags.append(not (inside.covers(left) and inside.covers(right)))
-    return flags
+        probes = [ShapelyPoint(add(middle, scale(normal, s * SIDE_PROBE))) for s in (1, -1)]
+        left, right = (
+            frozenset(room_id for room_id, shape in rooms.items() if shape.covers(probe))
+            for probe in probes
+        )
+        sides.append((left, right))
+    return sides
 
 
 def _square(centre: Vec) -> Polygon:

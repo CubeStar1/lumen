@@ -1,6 +1,7 @@
 import io
 
 import pytest
+from factories import two_room_drawing
 from fastapi.testclient import TestClient
 from PIL import Image
 from test_service import ScriptedModel
@@ -14,7 +15,7 @@ from floorplan.store import PlanStore
 @pytest.fixture
 def client(two_rooms, tmp_path):
     app.dependency_overrides[get_settings] = lambda: Settings(openai_api_key="test")
-    app.dependency_overrides[get_service] = lambda: PlanService(ScriptedModel(two_rooms, two_rooms))
+    app.dependency_overrides[get_service] = lambda: PlanService(ScriptedModel(two_room_drawing()))
     store = PlanStore(tmp_path)
     app.dependency_overrides[get_store] = lambda: store
     yield TestClient(app)

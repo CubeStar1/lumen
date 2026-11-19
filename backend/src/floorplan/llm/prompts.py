@@ -1,61 +1,74 @@
-PLAN_RULES = """Coordinate system:
-- Units are metres. The origin is the top-left corner of the drawing; +x points right and
-  +y points DOWN the page.
-- Determine scale from printed dimensions or a scale bar. Dimensions may be in feet and
-  inches (15'-3" = 4.65 m), metres, centimetres or millimetres. If there are none, assume a
-  standard interior door is 0.9 m wide and a typical bedroom is about 3.5 m across.
-- Give the floor a name (e.g. "Ground floor") and its floor-to-ceiling height.
+EXTRACT_INSTRUCTIONS = """\
+You read architectural floor plan drawings and describe what is drawn, precisely, so that a 3D
+model can be built from it. Read room labels, dimension text, wall lines, door swings, window
+symbols, stairs and columns.
 
-Rooms:
-- Every enclosed or clearly bounded space is a room, including corridors, passages, closets,
-  bathrooms, stair halls, balconies, porches and sit-outs, so the rooms tile the footprint.
-- Open-plan areas with no wall between them (living and dining, a hall and a passage) are
-  separate rooms that share an edge.
-- Set outdoor to true for porches, car porches, sit-outs, verandahs, terraces and open
-  balconies; they get no walls of their own.
-- Trace each room along the centre line of its walls. Neighbouring rooms must share edges
-  with identical coordinates.
-- Keep edges horizontal or vertical unless the wall is clearly drawn at an angle.
-- Use ids r1, r2, ... and the label printed on the plan as the name; if unlabelled, name the
-  room by its use (Toilet, Store, Passage).
+Coordinates:
+- Every position and length is in PIXELS of the image you are given (its size is stated). The
+  origin is the top-left corner; +x points right and +y points down.
+- Do not convert to metres. The scale is worked out from the dimensions you report.
 
 Walls:
-- Walls along room outlines are derived automatically. In walls, list only the others:
-  stub walls that end in open space, free-standing walls, and low walls or parapets
-  (kind low/parapet). Leave the list empty if there are none.
+- List every wall, drawn as the centre line of the thick wall band from one end to the other.
+  Split a wall where it meets another wall at a corner or T-junction.
+- Walls run continuously through the doors and windows in them; openings are cut out later.
+- Corners must meet: where two walls join, use the same point for both.
+- kind: exterior (the building's outer walls), interior, partition (thin walls), low (half-height
+  walls, sills, planters) or parapet. Give each wall's drawn thickness in pixels if you can.
+- Dashed lines (roof outlines, beams, overhead projections) and furniture are not walls. Areas
+  that are open to each other with no wall drawn between them get no wall.
+- Ids w1, w2, ...
 
 Openings:
-- Every door, sliding door, window and plain opening (a gap or archway with no door), with
-  ids o1, o2, ...
-- The position is the centre of the opening and must lie on an edge of the room(s) it
-  belongs to. A door between two rooms lists both room ids; an entrance door or a window in
-  an outer wall lists the room id and "exterior".
-- Width is the clear opening width (doors usually 0.8-1.0 m, windows 0.6-2.4 m).
+- Every door, sliding door, window and plain opening (a gap or archway with no door), ids
+  o1, o2, ... Give the wall it is in, its centre point on that wall and its clear width.
+
+Rooms:
+- One entry per room or space, including corridors, passages, stair halls, toilets, stores and
+  wardrobes that are walled off, and outdoor areas (porches, car porches, sit-outs, verandahs,
+  terraces, open balconies), ids r1, r2, ...
+- label: a point well inside the room. The room's outline is found from the walls around it, so
+  set polygon to null for rooms enclosed by walls of their own. Trace the polygon for outdoor
+  areas and for rooms that share an open space with others (no wall between them).
+- outdoor is true for porches, sit-outs, verandahs, terraces and open balconies.
+- name: the label printed on the plan; if unlabelled, name it by its use (Toilet, Store, Hall).
+- size: the room's printed size if there is one (e.g. 14'0"X10'0" or 3.0 x 4.2), else null.
+- Open-plan spaces with no wall between them (living and dining, a hall and its passage) are
+  separate rooms, each with its own label point and traced polygon; neighbouring polygons share
+  their common edge.
+
+Dimensions:
+- Report every printed dimension you can read: its text exactly as printed (15'-3", 4.5, 350,
+  3500) and the two end points of its dimension line (the ticks or arrows).
+- Room-size labels such as 14'0"X12'8" are not dimensions; give them as the room's size.
 
 Stairs and columns:
-- Each staircase is one stair with its flights and landings. A flight runs from the centre
-  of its bottom step to the centre of its top step; count its risers from the treads drawn.
-  For a curved flight set via to a point on its centre line. Direction is "up" or "down" as
-  marked by the arrow or label.
+- Each staircase is one stair with its flights and landings. A flight runs from the centre of its
+  bottom step to the centre of its top step; count its risers from the treads drawn. For a
+  curved flight set via to a point on its centre line. Direction is "up" or "down" as marked.
 - Free-standing columns (small filled squares or circles) go in columns with their size.
+
+Also give the floor's name (e.g. "Ground floor"), its floor-to-ceiling height in metres (3.0 if
+not stated), your own estimate of metres per pixel, and notes on anything you were unsure of.
 """
 
-EXTRACT_INSTRUCTIONS = f"""\
-You convert architectural floor plan drawings into a structured plan description.
-Read the drawing carefully: room labels, dimension text, wall lines, door swings and
-window symbols. Then describe the plan.
-
-{PLAN_RULES}
-Use the notes field to state how you determined the scale and anything you were unsure of.
-"""
-
-EDIT_INSTRUCTIONS = f"""\
+EDIT_INSTRUCTIONS = """\
 You modify an existing structured floor plan according to a user's instruction.
-Return the complete updated plan. Change only what the instruction asks for, and keep the
-ids of every untouched room and opening unchanged. New elements get the next free id.
-If the instruction cannot be applied, return the plan unchanged and explain why in notes.
+Return the complete updated plan. Change only what the instruction asks for, and keep the ids of
+every untouched element unchanged. New elements get the next free id. If the instruction cannot
+be applied, return the plan unchanged and explain why in notes.
 
-{PLAN_RULES}
+The plan:
+- Units are metres. The origin is the top-left of the drawing; +x points right, +y points down.
+- Keep derive_walls as given.
+  - derive_walls false: walls lists every wall as a centre line, and each room's outline is
+    found again from the walls around its label point. To move, add or remove a room, change
+    the walls and keep the room's label point inside it. Outdoor rooms keep their own polygon.
+  - derive_walls true: walls follow the room polygons, which neighbouring rooms share exactly;
+    walls lists only stubs and low walls. Change the polygons.
+- An opening sits on a wall: give that wall's id, a position on the wall and its clear width
+  (doors 0.8-1.0 m, windows 0.6-2.4 m).
+- Room types, wall kinds, stairs and columns follow the same meaning as in the current plan.
 """
 
 REPAIR_TEMPLATE = """\
@@ -65,5 +78,5 @@ Your previous answer had these problems:
 Previous answer:
 {previous}
 
-Return a corrected plan that fixes every problem.
+Return a corrected answer that fixes every problem.
 """

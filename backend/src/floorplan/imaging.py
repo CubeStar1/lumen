@@ -1,5 +1,6 @@
 import base64
 import io
+from dataclasses import dataclass
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
@@ -14,9 +15,20 @@ def load_image(data: bytes) -> Image.Image:
         raise InvalidImageError("The uploaded file is not a readable image.") from exc
 
 
-def to_data_url(image: Image.Image, max_side: int) -> str:
-    encoded = base64.b64encode(_encode(image, max_side, "PNG")).decode("ascii")
-    return f"data:image/png;base64,{encoded}"
+@dataclass(frozen=True)
+class PreparedImage:
+    """An image as sent to the model: a data URL and its pixel size."""
+
+    url: str
+    width: int
+    height: int
+
+
+def prepare(image: Image.Image, max_side: int) -> PreparedImage:
+    resized = image.copy()
+    resized.thumbnail((max_side, max_side))
+    encoded = base64.b64encode(_encode(resized, max_side, "PNG")).decode("ascii")
+    return PreparedImage(f"data:image/png;base64,{encoded}", resized.width, resized.height)
 
 
 def to_jpeg(image: Image.Image, max_side: int) -> bytes:

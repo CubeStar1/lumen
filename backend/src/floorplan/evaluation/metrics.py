@@ -97,7 +97,7 @@ def align(predicted: Snapshot, reference: Snapshot) -> Vec:
     """Translation that best lays the predicted walls over the reference walls."""
     centre = _sub(_centre(reference.walls), _centre(predicted.walls))
     best = centre
-    for radius, step in ((0.6, 0.1), (0.1, 0.02)):
+    for radius, step in ((3.0, 0.25), (0.3, 0.05), (0.06, 0.01)):
         steps = np.arange(-radius, radius + 1e-9, step)
         origin = best
         candidates = [(origin[0] + dx, origin[1] + dy) for dx, dy in product(steps, steps)]

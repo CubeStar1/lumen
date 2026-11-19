@@ -10,7 +10,7 @@ import math
 from dataclasses import dataclass
 
 from floorplan.geometry.vec import Vec, add, dot, length, normalized, point, scale, sub, vec
-from floorplan.models import Wall
+from floorplan.models import Wall, WallSpec
 
 ENDPOINT_SNAP = 0.25
 JUNCTION_REACH = 0.3
@@ -37,7 +37,7 @@ class _Segment:
         return normalized(self.axis)
 
 
-def connect(fixed: list[Wall], loose: list[Wall]) -> list[Wall]:
+def connect[W: (Wall, WallSpec)](fixed: list[Wall], loose: list[W]) -> list[W]:
     """`loose` walls moved onto the graph formed with `fixed`; `fixed` walls never move."""
     anchors = [_segment(w) for w in fixed]
     kept = [w for w in loose if not any(_duplicates(_segment(w), a) for a in anchors)]
@@ -132,5 +132,5 @@ def _distance_to(p: Vec, segment: _Segment) -> float:
     return math.dist(p, add(segment.start, scale(segment.axis, t)))
 
 
-def _segment(wall: Wall) -> _Segment:
+def _segment(wall: Wall | WallSpec) -> _Segment:
     return _Segment(vec(wall.start), vec(wall.end))

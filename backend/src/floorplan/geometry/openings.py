@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from floorplan.geometry.vec import add, dot, length, normalized, scale, sub, vec
+from floorplan.geometry.vec import Vec, add, dot, length, normalized, scale, sub, vec
 from floorplan.models import EXTERIOR, Opening, OpeningSpec, OpeningType, Wall
 
 MAX_DISTANCE = 0.4
@@ -46,13 +46,15 @@ def _best_wall(
     spec: OpeningSpec, walls: list[Wall], wall_rooms: dict[str, frozenset[str]]
 ) -> _Candidate | None:
     position = vec(spec.position)
+    named = next((w for w in walls if w.id == spec.wall), None) if spec.wall else None
+    if named is not None:
+        offset, distance = _project(position, named)
+        if distance <= MAX_DISTANCE:
+            return _Candidate(named, offset, distance)
+
     best: _Candidate | None = None
     for wall in walls:
-        start = vec(wall.start)
-        axis = sub(vec(wall.end), start)
-        direction = normalized(axis)
-        offset = min(max(dot(sub(position, start), direction), 0.0), length(axis))
-        distance = length(sub(position, add(start, scale(direction, offset))))
+        offset, distance = _project(position, wall)
         if distance > MAX_DISTANCE:
             continue
         score = distance + (0 if _matches(spec, wall, wall_rooms[wall.id]) else MISMATCH_PENALTY)
@@ -61,7 +63,18 @@ def _best_wall(
     return best
 
 
+def _project(position: Vec, wall: Wall) -> tuple[float, float]:
+    """Offset along the wall of the point nearest `position`, and the distance to it."""
+    start = vec(wall.start)
+    axis = sub(vec(wall.end), start)
+    direction = normalized(axis)
+    offset = min(max(dot(sub(position, start), direction), 0.0), length(axis))
+    return offset, length(sub(position, add(start, scale(direction, offset))))
+
+
 def _matches(spec: OpeningSpec, wall: Wall, rooms: frozenset[str]) -> bool:
+    if not spec.rooms:
+        return True
     if EXTERIOR in spec.rooms:
         return wall.exterior and bool(rooms & set(spec.rooms))
     return not wall.exterior and set(spec.rooms) <= rooms

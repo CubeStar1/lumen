@@ -1,14 +1,21 @@
 from collections.abc import Callable
 from typing import Protocol
 
+from pydantic import BaseModel
+
 from floorplan.errors import LevelNotFoundError, PlanRejectedError
+from floorplan.extraction import FloorExtraction, to_floor
 from floorplan.geometry import ValidationReport, build_building, normalize, validate
+from floorplan.geometry.layout import complete
+from floorplan.imaging import PreparedImage
 from floorplan.llm.client import Feedback
 from floorplan.models import BuildingKind, BuildingSpec, FloorSpec, LevelSpec, PlanResponse
 
 
 class PlanModel(Protocol):
-    def extract(self, image_url: str, feedback: Feedback | None = None) -> FloorSpec: ...
+    def extract(
+        self, image: PreparedImage, feedback: Feedback | None = None
+    ) -> FloorExtraction: ...
 
     def edit(
         self, floor: FloorSpec, instruction: str, feedback: Feedback | None = None
@@ -19,26 +26,32 @@ class PlanService:
     def __init__(self, model: PlanModel):
         self._model = model
 
-    def parse(self, image_url: str) -> PlanResponse:
-        floor, report = self._resolve(lambda feedback: self._model.extract(image_url, feedback))
+    def parse(self, image: PreparedImage) -> PlanResponse:
+        floor, report = self._resolve(
+            lambda feedback: self._model.extract(image, feedback), to_floor
+        )
         return _assemble(single_floor(floor), report.warnings)
 
     def edit(self, spec: BuildingSpec, instruction: str, level: int = 0) -> PlanResponse:
         target = _level(spec, level)
         floor, report = self._resolve(
-            lambda feedback: self._model.edit(target.floor, instruction, feedback)
+            lambda feedback: self._model.edit(target.floor, instruction, feedback),
+            lambda floor: floor,
         )
         levels = [
             lv.model_copy(update={"floor": floor}) if lv is target else lv for lv in spec.levels
         ]
         return _assemble(spec.model_copy(update={"levels": levels}), report.warnings)
 
-    def _resolve(
-        self, request: Callable[[Feedback | None], FloorSpec]
+    def _resolve[A: BaseModel](
+        self, ask: Callable[[Feedback | None], A], convert: Callable[[A], FloorSpec]
     ) -> tuple[FloorSpec, ValidationReport]:
-        floor, report = _prepare(request(None))
+        """Asks the model, retrying once with the problems found in its first answer."""
+        answer = ask(None)
+        floor, report = _prepare(convert(answer))
         if report.errors:
-            floor, report = _prepare(request(Feedback(floor, report.errors)))
+            answer = ask(Feedback(answer, report.errors))
+            floor, report = _prepare(convert(answer))
         if report.errors:
             raise PlanRejectedError(report.errors)
         return floor, report
@@ -69,8 +82,10 @@ def _level(spec: BuildingSpec, index: int) -> LevelSpec:
 
 
 def _prepare(floor: FloorSpec) -> tuple[FloorSpec, ValidationReport]:
-    cleaned = normalize(floor)
-    return cleaned, validate(cleaned)
+    cleaned, warnings = complete(normalize(floor))
+    report = validate(cleaned)
+    report.warnings[:0] = warnings
+    return cleaned, report
 
 
 def _assemble(spec: BuildingSpec, warnings: list[str]) -> PlanResponse:

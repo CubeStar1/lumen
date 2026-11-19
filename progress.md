@@ -68,6 +68,21 @@ room IoU 0.76 → 0.76, opening recall 0.82 → **0.91**, opening position error
 F1 0.61 → 0.96 (its V1 dip was a 4% scale miss in one run, so part of this is run-to-run variance). The angled
 sketch scores 0.16 even though its wings are now correctly angled: the coarse reference is the limit there.
 
+**V3 floor extraction: done (2026-11-19).**
+- The model now returns `FloorExtraction` in image pixels (`extraction.py`): wall centre lines with kinds,
+  openings on wall ids, room label points (outlines traced only for outdoor and open-plan rooms), printed room
+  sizes, dimension lines, stairs and columns. `to_floor` converts it to a metric `FloorSpec` (`derive_walls=False`).
+- Scale order: dimension lines, then printed room sizes against the faces the walls enclose, then the model's
+  own estimate, then door widths (0.9 m).
+- `geometry/layout.py`: walls joined into a graph, collinear pieces bridged across doorways, rooms found as the
+  graph's faces; open-plan faces shared out along the traced outlines, the rest by nearest label. Self-touching
+  outlines are repaired.
+- Exterior/interior is decided by which side of a wall has indoor rooms (`regions.wall_sides`).
+- 89 backend tests pass.
+
+Eval (gpt-6.2-sol): ground floor wall F1 0.99, indian_30x35 1.00, two_bedroom 1.00, bungalow 0.99 (room IoU 0.92,
+opening recall 1.00). The curved-stair case was dropped from the set (its reference was too approximate).
+
 ## Where things stand
 
 | Milestone | State |

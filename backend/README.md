@@ -54,17 +54,23 @@ uv run ruff check . && uv run ruff format --check .
 
 ## Pipeline
 
-1. `llm/` asks the model for a `FloorSpec`: rooms (indoor or outdoor), extra walls, openings, stairs
-   and columns in metres (image convention, +y down).
-2. `geometry/normalize` fits every room edge and wall onto shared lines (`geometry/orient` finds the
-   plan's dominant directions), so shared walls coincide exactly and angled walls keep their angle.
-3. `geometry/validate` reports errors (retried once with feedback) and warnings.
-4. `geometry/build` converts every level to one shared world frame (+y up, centred on the whole
-   building), derives walls from indoor room edges, joins the extra walls onto them
-   (`geometry/wallgraph`) and attaches openings.
+1. `llm/` sends the image (and its pixel size) and gets back a `FloorExtraction` in pixels: every
+   wall, openings on their walls, a label point per room (outlines only for outdoor and open-plan
+   rooms), stairs, columns and the printed dimensions with their end points.
+2. `extraction.py` computes the scale from those dimensions (`geometry/scale`; door widths and then
+   the model's own guess as fallbacks) and converts everything to a metric `FloorSpec`.
+3. `geometry/normalize` fits walls and outlines onto shared lines along the plan's dominant
+   directions (`geometry/orient`), so corners meet exactly and angled walls keep their angle.
+4. `geometry/layout` joins the walls into a graph (`geometry/wallgraph`), merges walls the model
+   stopped at a door, and finds each room as the face of the graph around its label point
+   (`geometry/regions`). Open-plan faces are split along the traced room outlines.
+5. `geometry/validate` reports errors (retried once with feedback, in the model's own format) and
+   warnings.
+6. `geometry/build` converts every level to one shared world frame (+y up, centred on the building),
+   decides exterior or interior from the rooms on each side of a wall, and attaches openings.
 
-`geometry/regions` (rooms as faces of the wall graph) and `geometry/scale` (scale from printed
-dimensions) are the building blocks for wall-first extraction (PLAN_V2 V3).
+Specs with `derive_walls: true` (older plans and the hand-written sample) instead derive walls from
+room outlines, plus their extra stub and low walls.
 
 ## Evaluate
 

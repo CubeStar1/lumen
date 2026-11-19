@@ -49,6 +49,7 @@ def test_l_shaped_room_has_six_walls():
         name="L",
         type=RoomType.LIVING,
         outdoor=False,
+        label=None,
         polygon=[Point(x=x, y=y) for x, y in corners],
     )
 

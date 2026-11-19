@@ -80,3 +80,17 @@ def test_overlapping_openings_keep_only_the_first():
 
     assert set(walls_with_openings(geometry)) == {"o1"}
     assert any("o2" in w for w in warnings)
+
+
+def test_listed_walls_take_their_kind_from_the_rooms_beside_them():
+    from factories import two_room_drawing
+
+    from floorplan.extraction import to_floor
+    from floorplan.service import from_spec
+
+    level = from_spec(single_floor(to_floor(two_room_drawing()))).geometry.levels[0]
+
+    kinds = {w.id: w.exterior for w in level.walls}
+    assert kinds == {"w1": True, "w2": True, "w3": True, "w4": True, "w5": False}
+    assert walls_with_openings(level)["o1"].id == "w5"
+    assert walls_with_openings(level)["o2"].id == "w1"

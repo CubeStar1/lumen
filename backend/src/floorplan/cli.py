@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from floorplan.config import get_settings
-from floorplan.imaging import load_image, to_data_url
+from floorplan.imaging import load_image, prepare
 from floorplan.legacy import upgrade_spec
 from floorplan.main import get_service
 from floorplan.models import PlanResponse
@@ -45,8 +45,8 @@ def main() -> None:
 
 
 def _from_image(path: Path) -> PlanResponse:
-    image_url = to_data_url(load_image(path.read_bytes()), get_settings().max_image_side)
-    return get_service().parse(image_url)
+    image = prepare(load_image(path.read_bytes()), get_settings().max_image_side)
+    return get_service().parse(image)
 
 
 def _from_spec(path: Path) -> PlanResponse:

@@ -1,54 +1,57 @@
 import pytest
-from factories import plan
+from factories import drawing, two_room_drawing
 
 from floorplan.errors import PlanRejectedError
+from floorplan.imaging import PreparedImage
 from floorplan.llm.client import Feedback
 from floorplan.models import FloorSpec
 from floorplan.service import PlanService, single_floor
 
+IMAGE = PreparedImage("data:", 800, 400)
+
 
 class ScriptedModel:
-    def __init__(self, *answers: FloorSpec):
+    """Answers extractions from a script; edits return the plan unchanged."""
+
+    def __init__(self, *answers):
         self.answers = list(answers)
         self.feedback: list[Feedback | None] = []
 
-    def extract(self, image_url: str, feedback: Feedback | None = None) -> FloorSpec:
+    def extract(self, image: PreparedImage, feedback: Feedback | None = None):
         self.feedback.append(feedback)
-        return self.answers.pop(0)
+        return self.answers.pop(0) if len(self.answers) > 1 else self.answers[0]
 
     def edit(
         self, floor: FloorSpec, instruction: str, feedback: Feedback | None = None
     ) -> FloorSpec:
-        return self.extract("", feedback)
+        return floor
 
 
-def test_valid_answer_is_used_directly(two_rooms):
-    model = ScriptedModel(two_rooms)
+def test_drawing_becomes_a_wall_first_plan_in_metres():
+    response = PlanService(ScriptedModel(two_room_drawing())).parse(IMAGE)
 
-    response = PlanService(model).parse("data:")
+    floor = response.spec.levels[0].floor
+    assert not floor.derive_walls
+    assert "Scale from 1 printed dimension" in floor.notes
+    assert sorted(round(r.area) for r in response.geometry.rooms) == [9, 12]
 
-    assert model.feedback == [None]
-    assert len(response.geometry.rooms) == 2
 
+def test_invalid_answer_is_retried_with_feedback_in_the_models_own_format():
+    model = ScriptedModel(drawing(), two_room_drawing())
 
-def test_invalid_answer_is_retried_with_feedback(two_rooms):
-    model = ScriptedModel(plan([]), two_rooms)
+    response = PlanService(model).parse(IMAGE)
 
-    response = PlanService(model).parse("data:")
-
-    assert model.feedback[1] is not None
     assert model.feedback[1].problems == ["No rooms were found."]
+    assert model.feedback[1].previous == drawing()
     assert len(response.geometry.rooms) == 2
 
 
 def test_repeated_invalid_answer_is_rejected():
-    model = ScriptedModel(plan([]), plan([]))
-
     with pytest.raises(PlanRejectedError):
-        PlanService(model).parse("data:")
+        PlanService(ScriptedModel(drawing())).parse(IMAGE)
 
 
 def test_edit_goes_through_the_same_pipeline(two_rooms):
-    response = PlanService(ScriptedModel(two_rooms)).edit(single_floor(two_rooms), "bigger")
+    response = PlanService(ScriptedModel(drawing())).edit(single_floor(two_rooms), "bigger")
 
     assert response.spec.levels[0].floor.rooms[0].id == "r1"

@@ -20,7 +20,9 @@ from floorplan.evaluation.metrics import Score, mean_score, score
 from floorplan.evaluation.reference import load_reference
 from floorplan.evaluation.report import markdown, overlay
 from floorplan.evaluation.snapshot import from_geometry, from_reference
-from floorplan.imaging import load_image, to_data_url
+from floorplan.extraction import FloorExtraction, to_floor
+from floorplan.imaging import PreparedImage, load_image, prepare
+from floorplan.legacy import upgrade_plan, upgrade_spec
 from floorplan.main import get_service, plan_model
 from floorplan.models import FloorSpec, PlanResponse
 from floorplan.service import PlanService, from_spec, single_floor
@@ -60,6 +62,7 @@ def main() -> None:
     elif args.rebuild:
         source = args.root / "runs" / args.rebuild / "raw"
         predictions = {name: _rebuild_all(source, name) for name in cases}
+        _save(predictions, predictions_dir)
     else:
         predictions = _predict(cases, predictions_dir, args.repeat)
 
@@ -114,10 +117,10 @@ class _Recorder:
 
     def __init__(self, model):
         self._model = model
-        self.answer: FloorSpec | None = None
+        self.answer: FloorExtraction | None = None
 
-    def extract(self, image_url: str, feedback=None) -> FloorSpec:
-        self.answer = self._model.extract(image_url, feedback)
+    def extract(self, image: PreparedImage, feedback=None) -> FloorExtraction:
+        self.answer = self._model.extract(image, feedback)
         return self.answer
 
     def edit(self, floor: FloorSpec, instruction: str, feedback=None) -> FloorSpec:
@@ -132,7 +135,7 @@ def _predict(cases: dict[str, Path], output: Path, repeat: int) -> dict[str, lis
         name, folder, index = job
         recorder = _Recorder(plan_model(get_settings()))
         try:
-            response = PlanService(recorder).parse(_image_url(folder))
+            response = PlanService(recorder).parse(_image(folder))
         except (ModelError, PlanRejectedError) as exc:
             return name, str(exc)
         finally:
@@ -152,15 +155,22 @@ def _predict(cases: dict[str, Path], output: Path, repeat: int) -> dict[str, lis
     return results
 
 
-def _image_url(folder: Path) -> str:
+def _image(folder: Path) -> PreparedImage:
     image = next(folder / n for n in IMAGE_NAMES if (folder / n).exists())
-    return to_data_url(load_image(image.read_bytes()), get_settings().max_image_side)
+    return prepare(load_image(image.read_bytes()), get_settings().max_image_side)
 
 
 def _rebuild_all(folder: Path, name: str) -> list[Prediction]:
     results: list[Prediction] = []
     for path in sorted(folder.glob(f"{name}.*.json")):
-        floor = FloorSpec.model_validate_json(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
+        floor = (
+            to_floor(FloorExtraction.model_validate(data))
+            if "dimensions" in data
+            else FloorSpec.model_validate(
+                upgrade_spec(_as_building(data)).levels[0].floor.model_dump()
+            )
+        )
         try:
             results.append(from_spec(single_floor(floor)))
         except PlanRejectedError as exc:
@@ -168,9 +178,24 @@ def _rebuild_all(folder: Path, name: str) -> list[Prediction]:
     return results
 
 
+def _save(predictions: dict[str, list[Prediction]], folder: Path) -> None:
+    for name, results in predictions.items():
+        for index, result in enumerate(results):
+            if isinstance(result, PlanResponse):
+                path = folder / f"{name}.{index}.json"
+                path.write_text(result.model_dump_json(indent=2), encoding="utf-8")
+
+
+def _as_building(floor: dict) -> dict:
+    return {"kind": "floor", "levels": [{"index": 0, "elevation": 0.0, "floor": floor}]}
+
+
 def _load_all(folder: Path, name: str) -> list[Prediction]:
     paths = sorted(folder.glob(f"{name}.*.json")) or sorted(folder.glob(f"{name}.json"))
-    return [PlanResponse.model_validate_json(p.read_text(encoding="utf-8")) for p in paths]
+    return [
+        PlanResponse.model_validate(upgrade_plan(json.loads(p.read_text(encoding="utf-8"))))
+        for p in paths
+    ]
 
 
 if __name__ == "__main__":

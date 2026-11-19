@@ -13,7 +13,7 @@ from floorplan.errors import (
     PlanNotFoundError,
     PlanRejectedError,
 )
-from floorplan.imaging import load_image, to_data_url, to_jpeg
+from floorplan.imaging import load_image, prepare, to_jpeg
 from floorplan.llm.client import OpenAIPlanModel
 from floorplan.models import (
     EditRequest,
@@ -84,7 +84,7 @@ def parse_plan(
         raise HTTPException(status_code=413, detail="Image is too large.")
 
     picture = load_image(data)
-    plan = service.parse(to_data_url(picture, settings.max_image_side))
+    plan = service.parse(prepare(picture, settings.max_image_side))
     return store.create(
         plan,
         image=to_jpeg(picture, settings.stored_image_side),

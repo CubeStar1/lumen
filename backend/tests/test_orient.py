@@ -18,7 +18,9 @@ def rotated_room(room_id: str, corners, angle_degrees: float, noise=()) -> RoomS
                 x=x * math.cos(a) - y * math.sin(a) + dx, y=x * math.sin(a) + y * math.cos(a) + dy
             )
         )
-    return RoomSpec(id=room_id, name=room_id, type=RoomType.OTHER, outdoor=False, polygon=points)
+    return RoomSpec(
+        id=room_id, name=room_id, type=RoomType.OTHER, outdoor=False, label=None, polygon=points
+    )
 
 
 def edge_angles(room: RoomSpec) -> set[float]:

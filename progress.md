@@ -14,7 +14,7 @@ Last updated: 2026-11-19. Read alongside [PLAN.md](PLAN.md), which has the desig
 | M5 App flow (home → preview → AR) | Done |
 | M6 iOS device build | **Done.** Runs on the iPad Air M2 (2026-11-19). On-device AR flow still to be exercised |
 | M7 Natural-language edits + walkthrough | Code done; edits not yet tried with a real key inside the app |
-| M8 Polish | Not started |
+| M8 Polish | **Done** (2026-11-19): iOS-style UI, plan history, materials and lighting. Needs a device check |
 
 ## First thing to do next session
 
@@ -52,6 +52,33 @@ Model `gpt-5.6-luna`, input `backend/samples/two_bedroom.png`, a synthetic drawi
 - **Network path:** with the backend running and a dummy key, an in-app edit request reached `/plans/edit`.
   The snake_case spec passed validation, and OpenAI's 401 came back as a 502 whose message appeared in the AR hint.
 
+## M8 polish (2026-11-19)
+
+- **Plan history.** The backend saves every parsed plan in `backend/data/<id>/` (record JSON, image, thumbnail).
+  New endpoints: list, get, rename, delete, edit by id, and thumbnail/image. See `backend/README.md`. The sample
+  plan stays local and uses the stateless `/plans/edit`.
+- **UI rebuilt in an iOS style.** Inter font (4 weights) and Material Icons Round, generated rounded sprites, iOS system
+  colours (`UI/Theme.cs`). `DensityScaler` sizes the UI in iOS points per device, so the iPad no longer looks
+  oversized, and `ResponsivePadding` caps content at 680 pt on wide screens. Pages: Library (start card, connection
+  badge, recent plans with thumbnails), Plan detail (2D plan, stat tiles, room list, notes, sticky "View in AR"), AR HUD
+  (glass close button, title and hint pills, Place button, five-item glass toolbar). Overlays: edit sheet with
+  suggestions, server settings sheet, action sheet (Rename / Delete), rename alert, progress card with stages, toast.
+  Screens fade or slide in; buttons shrink slightly when pressed; sheets move up above the keyboard.
+- **Model look.** Procedural textures (`Editor/Assets/Procedural.cs`): oak/ash planks, three tile sizes, deck,
+  plaster, concrete. Walls have dark section-cut caps, windows have glass and frames, doors have frames, and the model
+  sits on a white base board. A transparent **shadow catcher** (`Shaders/ShadowCatcher.shader`) shows the model's shadow
+  on the real surface. Room labels are rounded white cards in title case, lowered to 2.3 m in walkthrough.
+- **Lighting.** A warm sun with soft shadows, trilight ambient, and `LightEstimator`, which follows ARKit's ambient
+  intensity and colour temperature. URP: MSAA 4x, render scale 1, 2048 shadow map, 2 cascades over 20 m, soft
+  shadows, transparent objects receive shadows (the Mobile renderer had this off).
+- **AR flow.** A placement reticle follows the screen centre; "Place model" places at the reticle, or tap a spot. The
+  model pops in with an ease-out-back animation. Tap-to-move is disabled in walkthrough. Planes found after placement
+  stay hidden. The AR session only runs while the AR view is open, and the screen doesn't sleep during AR.
+
+Verified in the Editor (XR Simulation, backend running): library, detail, rename (saved on the server), action sheet,
+settings sheet, placement with the reticle, roof/labels/walk toggles, edit sheet, progress card and error toast.
+**Not yet verified on a device**: keyboard avoidance, iPad/iPhone point scaling, light estimation, real edits.
+
 ## Known issues / open items
 
 - **Mac build steps** (full guide for Claude Code on the Mac: [MAC_BUILD.md](MAC_BUILD.md)): after copying the Windows export to the Mac, run
@@ -63,8 +90,7 @@ Model `gpt-5.6-luna`, input `backend/samples/two_bedroom.png`, a synthetic drawi
 - **Real-world plans untested.** Expect worse results on photos, hand-drawn plans or plans without dimension text.
 - In the Editor, the app's server URL was set to `http://127.0.0.1:8000` in PlayerPrefs during testing. On
   the device, type the laptop's LAN IP on the home screen.
-- After placement, planes detected later stay visible. Minor; hide them via `trackablesChanged` if it bothers.
-- Not started (M8): light estimation, door/window frames, furniture, voice input, image-tracked mode.
+- Ideas not done: furniture, voice input, image-tracked mode, AR environment probes for glass reflections.
 - When setting up git: ignore `unity-project/floor-plan-viz/Builds/`, `Library/`, `Temp/`, `Logs/`,
   `UserSettings/`. `backend/.env` and `backend/out/` are already in `backend/.gitignore`.
 
@@ -93,11 +119,23 @@ uv run pytest
 
 Unity editor menu **Floor Plan Viz**:
 - *Configure iOS*: Player settings, ARKit/Simulation loaders, URP AR background feature
-- *Build Assets*: materials, palette, label/plane prefabs, API settings
-- *Rebuild Scenes*: regenerates `Main` and `PlanDebug`. Scenes are generated, so edit `ScreenBuilder`/`SceneBuilder`, not the scenes.
+- *Build Assets*: textures, materials, palette, label/plane/reticle prefabs, API settings. Generated textures and
+  fonts are kept once created; delete the PNG or `* SDF.asset` to regenerate it.
+- *Configure Rendering*: URP quality, transparent shadows, colour temperature, visible status bar
+- *Rebuild Scenes*: runs the two items above, then regenerates `Main` and `PlanDebug`. Scenes are generated, so edit
+  `Editor/Ui/*Builder.cs` and `SceneBuilder`, not the scenes.
 - *Build iOS Xcode Project*: writes `Builds/iOS`
 
 ## Gotchas learned (Unity CLI / Editor automation)
+
+- **Play mode stalls when the Editor is unfocused** (`Time.frameCount` stays at 1). Run
+  `UnityEngine.Application.runInBackground = true;` via eval after entering Play mode.
+- Portrait test captures: `UnityEditor.PlayModeWindow.SetCustomRenderingResolution(780, 1688, "iPhone")`.
+- TMP text with Ellipsis overflow renders **nothing** if its box is even slightly shorter than one line. `UiKit.Label`
+  gives non-wrapping labels a one-line minimum height for this reason.
+- A sliced `Image` reports its sprite borders as its preferred size, which inflates layouts. Backgrounds use `ShapeImage`.
+- Avoid `using static UiKit` names that clash with Unity types (`Rect`, `Text`, `Button`, `Input`); hence `Node`, `Label`,
+  `TextButton`, `TextField`.
 
 - **Auto-tick:** run `unity command editor set_auto_tick --enabled true --persist true` once (already
   done, persisted). Without it the unfocused Editor stops ticking and every command times out.

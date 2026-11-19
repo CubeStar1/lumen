@@ -7,7 +7,7 @@ import argparse
 from pathlib import Path
 
 from floorplan.config import get_settings
-from floorplan.imaging import to_data_url
+from floorplan.imaging import load_image, to_data_url
 from floorplan.main import get_service
 from floorplan.models import PlanResponse, PlanSpec
 from floorplan.render import render
@@ -38,7 +38,7 @@ def main() -> None:
 
 
 def _from_image(path: Path) -> PlanResponse:
-    image_url = to_data_url(path.read_bytes(), get_settings().max_image_side)
+    image_url = to_data_url(load_image(path.read_bytes()), get_settings().max_image_side)
     return get_service().parse(image_url)
 
 

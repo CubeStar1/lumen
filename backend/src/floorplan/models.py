@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import StrEnum
 
 from pydantic import BaseModel, Field
@@ -99,3 +100,27 @@ class PlanResponse(BaseModel):
 class EditRequest(BaseModel):
     spec: PlanSpec
     instruction: str = Field(min_length=1, max_length=500)
+
+
+class InstructionRequest(BaseModel):
+    instruction: str = Field(min_length=1, max_length=500)
+
+
+class RenameRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+
+
+class PlanSummary(BaseModel):
+    id: str
+    name: str
+    created_at: datetime
+    updated_at: datetime
+    has_image: bool
+    room_count: int
+    area: float
+    width: float
+    depth: float
+
+
+class PlanRecord(PlanSummary):
+    plan: PlanResponse

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -12,6 +13,9 @@ class Settings(BaseSettings):
     openai_reasoning_effort: str | None = None
     max_image_side: int = 2048
     max_upload_bytes: int = 15 * 1024 * 1024
+    data_dir: Path = Path("data")
+    stored_image_side: int = 1600
+    thumbnail_side: int = 320
 
 
 @lru_cache

@@ -20,8 +20,16 @@ The phone connects to `http://<laptop-lan-ip>:8000`.
 | Endpoint | Body | Returns |
 |---|---|---|
 | `GET /health` | — | status and model name |
-| `POST /plans/parse` | multipart `image` | `PlanResponse` |
-| `POST /plans/edit` | `{ "spec": PlanSpec, "instruction": "..." }` | `PlanResponse` |
+| `POST /plans/parse` | multipart `image` | `PlanRecord` (the plan, saved) |
+| `GET /plans` | — | `PlanSummary[]`, newest first |
+| `GET /plans/{id}` | — | `PlanRecord` |
+| `PATCH /plans/{id}` | `{ "name": "..." }` | `PlanRecord` |
+| `DELETE /plans/{id}` | — | 204 |
+| `POST /plans/{id}/edit` | `{ "instruction": "..." }` | `PlanRecord` (saved over the old plan) |
+| `GET /plans/{id}/image`, `/thumbnail` | — | JPEG of the uploaded plan |
+| `POST /plans/edit` | `{ "spec": PlanSpec, "instruction": "..." }` | `PlanResponse` (unsaved plans, e.g. the sample) |
+
+Saved plans live in `data/<id>/` (`record.json`, `image.jpg`, `thumbnail.jpg`). Set `DATA_DIR` to store them elsewhere.
 
 ## Try a plan from the command line
 

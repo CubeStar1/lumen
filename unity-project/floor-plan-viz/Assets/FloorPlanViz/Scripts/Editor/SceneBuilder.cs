@@ -99,6 +99,7 @@ namespace FloorPlanViz.Editor
 
             var ar = app.AddComponent<ArExperience>();
             SerializedWiring.Set(ar, "session", session);
+            SerializedWiring.Set(ar, "arCamera", origin.Camera);
             SerializedWiring.Set(ar, "builder", builder);
             SerializedWiring.Set(ar, "placement", placement);
             SerializedWiring.Set(ar, "viewMode", viewMode);

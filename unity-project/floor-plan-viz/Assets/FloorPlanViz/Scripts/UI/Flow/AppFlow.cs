@@ -43,6 +43,7 @@ namespace FloorPlanViz.UI
 
         void Awake()
         {
+            Application.targetFrameRate = DisplayRefreshRate();
             api = new PlanApiClient(apiSettings);
             thumbnails = new ThumbnailCache(api);
 
@@ -71,6 +72,13 @@ namespace FloorPlanViz.UI
                 overlay.SetVisible(false);
             ar.Exit();
             ShowLibrary();
+        }
+
+        /// <summary>iOS caps apps at 30 fps unless asked otherwise; match the display instead (60 Hz, or 120 Hz on ProMotion).</summary>
+        static int DisplayRefreshRate()
+        {
+            var rate = Mathf.RoundToInt((float)Screen.currentResolution.refreshRateRatio.value);
+            return rate > 0 ? rate : 60;
         }
 
         void OnDestroy()

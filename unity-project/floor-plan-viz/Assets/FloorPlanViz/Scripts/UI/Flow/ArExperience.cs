@@ -14,6 +14,7 @@ namespace FloorPlanViz.UI
         const string PlacedHint = "Pinch to resize · Twist to rotate · Tap to move";
 
         [SerializeField] ARSession session;
+        [SerializeField] Camera arCamera;
         [SerializeField] FloorPlanBuilder builder;
         [SerializeField] PlacementController placement;
         [SerializeField] ViewModeController viewMode;
@@ -72,6 +73,7 @@ namespace FloorPlanViz.UI
         public void Enter(PlanDocument document)
         {
             session.enabled = true;
+            arCamera.enabled = true;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             model = builder.Build(document.Plan.Geometry, null);
             level = model.Levels.Count - 1;
@@ -88,6 +90,7 @@ namespace FloorPlanViz.UI
                 Destroy(model.gameObject);
             model = null;
             session.enabled = false;
+            arCamera.enabled = false;
             Screen.sleepTimeout = SleepTimeout.SystemSetting;
         }
 

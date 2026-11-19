@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace FloorPlanViz.UI
 {
-    /// <summary>Floating controls over the camera view: close, coaching hint, place button and the view toolbar.</summary>
+    /// <summary>Floating controls over the camera view: close, coaching hint, place button, the view toolbar and the walking thumbsticks.</summary>
     public sealed class ArHud : AppScreen
     {
         [SerializeField] Button closeButton;
@@ -25,11 +25,14 @@ namespace FloorPlanViz.UI
         [SerializeField] ToolbarButton resetButton;
         [SerializeField] ToolbarButton editButton;
         [SerializeField] ToolbarButton explodeButton;
+        [SerializeField] ToolbarButton controlsButton;
+        [SerializeField] GameObject walkControls;
         [SerializeField] SegmentedControl levelPicker;
 
         bool roofOn;
         bool labelsOn = true;
         bool explodedOn;
+        bool firstPersonOn;
         int levelCount = 1;
 
         public event Action CloseRequested;
@@ -41,6 +44,7 @@ namespace FloorPlanViz.UI
         public event Action EditRequested;
         public event Action<int> LevelSelected;
         public event Action<bool> ExplodeToggled;
+        public event Action<bool> FirstPersonToggled;
 
         void Awake()
         {
@@ -52,6 +56,7 @@ namespace FloorPlanViz.UI
             resetButton.Clicked += () => ResetRequested?.Invoke();
             editButton.Clicked += () => EditRequested?.Invoke();
             explodeButton.Clicked += () => ExplodeToggled?.Invoke(!explodedOn);
+            controlsButton.Clicked += () => FirstPersonToggled?.Invoke(!firstPersonOn);
             levelPicker.Changed += segment => LevelSelected?.Invoke(levelCount - 1 - segment);
             resetButton.Set(Icons.RestartAlt, "Reset", false);
             editButton.Set(Icons.AutoAwesome, "Edit", false);
@@ -70,6 +75,7 @@ namespace FloorPlanViz.UI
             titleText.text = title;
             placingControls.SetActive(true);
             toolbar.SetActive(false);
+            walkControls.SetActive(false);
             levelPicker.gameObject.SetActive(false);
             SetPlaceReady(false);
         }
@@ -81,22 +87,27 @@ namespace FloorPlanViz.UI
             SetHint(ready ? "Tap Place, or tap a spot on the surface." : "Move slowly to find a flat surface.");
         }
 
-        public void ShowPlaced(ViewMode mode, bool roof, bool labels, bool exploded)
+        public void ShowPlaced(ViewMode mode, bool roof, bool labels, bool exploded, bool firstPerson)
         {
             placingControls.SetActive(false);
             toolbar.SetActive(true);
             roofOn = roof;
             labelsOn = labels;
             explodedOn = exploded;
+            firstPersonOn = firstPerson;
             var tabletop = mode == ViewMode.Tabletop;
             var building = levelCount > 1;
             levelPicker.gameObject.SetActive(building);
-            explodeButton.gameObject.SetActive(building);
-            explodeButton.Set(Icons.Layers, "Explode", exploded, interactable: tabletop);
-            roofButton.Set(Icons.Roofing, "Roof", roof, interactable: tabletop);
+            explodeButton.gameObject.SetActive(building && tabletop);
+            roofButton.gameObject.SetActive(tabletop);
+            resetButton.gameObject.SetActive(tabletop);
+            controlsButton.gameObject.SetActive(!tabletop);
+            walkControls.SetActive(!tabletop && firstPerson);
+            explodeButton.Set(Icons.Layers, "Explode", exploded);
+            roofButton.Set(Icons.Roofing, "Roof", roof);
             labelsButton.Set(Icons.Label, "Labels", labels);
             modeButton.Set(tabletop ? Icons.Walk : Icons.ViewInAr, tabletop ? "Walk in" : "Model", false);
-            resetButton.Set(Icons.RestartAlt, "Reset", false, interactable: tabletop);
+            controlsButton.Set(Icons.Gamepad, "Controls", firstPerson);
         }
 
         public void SetHint(string hint)

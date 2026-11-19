@@ -19,14 +19,19 @@ namespace FloorPlanViz.AR
         [SerializeField] float tabletopSize = 0.6f;
         [SerializeField] Transform viewer;
         [SerializeField] ModelGestures gestures;
+        [SerializeField] FirstPersonWalker walker;
 
         Coroutine appearing;
 
         public ViewMode Mode { get; private set; }
 
+        /// <summary>Whether the walkthrough is driven by on-screen game controls rather than by walking around for real.</summary>
+        public bool FirstPerson => walker.IsActive;
+
         public void ShowTabletop(FloorPlanModel model, bool animate = true)
         {
             Mode = ViewMode.Tabletop;
+            walker.End();
             model.BaseVisible = true;
             model.LabelHeight = null;
 
@@ -44,8 +49,9 @@ namespace FloorPlanViz.AR
                 target.localScale = Vector3.one * scale;
         }
 
-        /// <summary>Shows the model at full size with the viewer standing in the largest room of a level.</summary>
-        public void ShowWalkthrough(FloorPlanModel model, float floorHeight, int level = 0)
+        /// <summary>Shows the model at full size with the viewer standing in the largest room of a level, optionally
+        /// walking it with game controls instead of in person.</summary>
+        public void ShowWalkthrough(FloorPlanModel model, float floorHeight, int level, bool firstPerson)
         {
             Mode = ViewMode.Walkthrough;
             if (appearing != null)
@@ -62,7 +68,14 @@ namespace FloorPlanViz.AR
 
             var feet = new Vector3(viewer.position.x, floorHeight, viewer.position.z);
             target.position = feet - target.rotation * model.RoomCentre(level);
+
+            if (firstPerson)
+                walker.Begin(feet, target.eulerAngles.y);
+            else
+                walker.End();
         }
+
+        public void StopWalking() => walker.End();
 
         static IEnumerator Appear(Transform target, float scale, float baseThickness)
         {

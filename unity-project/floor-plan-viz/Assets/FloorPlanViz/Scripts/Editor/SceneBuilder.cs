@@ -89,6 +89,7 @@ namespace FloorPlanViz.Editor
             var library = LibraryBuilder.Build(pages);
             var detail = DetailBuilder.Build(pages);
             var hud = HudBuilder.Build(pages);
+            SerializedWiring.Set(viewMode, "walker", AddWalker(origin.Camera, hud));
             var editSheet = OverlayBuilder.Edit(overlays);
             var settingsSheet = OverlayBuilder.Settings(overlays);
             var actionSheet = OverlayBuilder.Actions(overlays);
@@ -138,6 +139,29 @@ namespace FloorPlanViz.Editor
             occlusion.requestedHumanDepthMode = HumanSegmentationDepthMode.Fastest;
             occlusion.requestedEnvironmentDepthMode = EnvironmentDepthMode.Disabled;
             return camera.transform;
+        }
+
+        /// <summary>The first-person body and its camera, off until the walkthrough asks for game controls.</summary>
+        static FirstPersonWalker AddWalker(Camera arCamera, ArHud hud)
+        {
+            var body = new GameObject("Walker", typeof(CharacterController));
+            var eye = new GameObject("WalkCamera", typeof(Camera));
+            eye.tag = "MainCamera";
+            eye.transform.SetParent(body.transform, false);
+            var view = eye.GetComponent<Camera>();
+            view.clearFlags = CameraClearFlags.SolidColor;
+            view.backgroundColor = new Color(0.74f, 0.83f, 0.93f);
+            view.nearClipPlane = 0.05f;
+            view.farClipPlane = 300f;
+            view.fieldOfView = 70f;
+
+            var walker = body.AddComponent<FirstPersonWalker>();
+            SerializedWiring.Set(walker, "view", view);
+            SerializedWiring.Set(walker, "arView", arCamera);
+            SerializedWiring.Set(walker, "joystick", hud.GetComponentInChildren<VirtualJoystick>(true));
+            SerializedWiring.Set(walker, "lookPad", hud.GetComponentInChildren<LookPad>(true));
+            body.SetActive(false);
+            return walker;
         }
 
         static FloorPlanBuilder AddBuilder(GameObject host)

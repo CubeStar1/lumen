@@ -21,6 +21,7 @@ namespace FloorPlanViz.UI
 
         FloorPlanModel model;
         int level;
+        bool firstPerson = true;
 
         public event Action CloseRequested;
         public event Action EditRequested;
@@ -54,6 +55,12 @@ namespace FloorPlanViz.UI
                 model.Exploded = exploded;
                 RefreshToolbar();
             };
+            hud.FirstPersonToggled += on =>
+            {
+                firstPerson = on;
+                ShowWalkthrough();
+                RefreshToolbar();
+            };
         }
 
         void Update()
@@ -75,6 +82,7 @@ namespace FloorPlanViz.UI
 
         public void Exit()
         {
+            viewMode.StopWalking();
             placement.Clear();
             if (model != null)
                 Destroy(model.gameObject);
@@ -106,7 +114,7 @@ namespace FloorPlanViz.UI
             }
 
             if (viewMode.Mode == ViewMode.Walkthrough)
-                viewMode.ShowWalkthrough(model, placement.EstimateFloorHeight(), level);
+                ShowWalkthrough();
             else
             {
                 viewMode.ShowTabletop(model, animate: false);
@@ -129,12 +137,12 @@ namespace FloorPlanViz.UI
             if (viewMode.Mode == ViewMode.Tabletop)
             {
                 model.Exploded = false;
-                viewMode.ShowWalkthrough(model, placement.EstimateFloorHeight(), level);
-                hud.SetHint(WalkthroughHint());
+                ShowWalkthrough();
             }
             else
             {
                 viewMode.ShowTabletop(model);
+                model.VisibleUpTo = level;
                 hud.SetHint(PlacedHint);
             }
             placement.TapToMove = viewMode.Mode == ViewMode.Tabletop;
@@ -146,17 +154,31 @@ namespace FloorPlanViz.UI
             level = index;
             model.VisibleUpTo = index;
             if (viewMode.Mode == ViewMode.Walkthrough)
-            {
-                viewMode.ShowWalkthrough(model, placement.EstimateFloorHeight(), level);
-                hud.SetHint(WalkthroughHint());
-            }
+                ShowWalkthrough();
             RefreshToolbar();
         }
 
-        string WalkthroughHint() => model.Levels.Count > 1
-            ? $"You're on the {model.Levels[level].Name.ToLowerInvariant()}, in its largest room."
-            : "You're standing in the largest room. Walk around to explore.";
+        /// <summary>Stands the viewer in the selected level's largest room. With game controls every level stays up so the stairs lead somewhere.</summary>
+        void ShowWalkthrough()
+        {
+            viewMode.ShowWalkthrough(model, placement.EstimateFloorHeight(), level, firstPerson);
+            model.VisibleUpTo = firstPerson ? model.Levels.Count - 1 : level;
+            hud.SetHint(WalkthroughHint());
+        }
 
-        void RefreshToolbar() => hud.ShowPlaced(viewMode.Mode, model.RoofVisible, model.LabelsVisible, model.Exploded);
+        string WalkthroughHint()
+        {
+            var building = model.Levels.Count > 1;
+            if (firstPerson)
+                return building
+                    ? "Left thumb to walk, right thumb to look. Take the stairs or pick a level."
+                    : "Left thumb to walk, right thumb to look around.";
+            return building
+                ? $"You're on the {model.Levels[level].Name.ToLowerInvariant()}, in its largest room."
+                : "You're standing in the largest room. Walk around to explore.";
+        }
+
+        void RefreshToolbar() =>
+            hud.ShowPlaced(viewMode.Mode, model.RoofVisible, model.LabelsVisible, model.Exploded, viewMode.FirstPerson);
     }
 }

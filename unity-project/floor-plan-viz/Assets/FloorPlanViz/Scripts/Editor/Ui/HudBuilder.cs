@@ -1,3 +1,4 @@
+using FloorPlanViz.AR;
 using FloorPlanViz.UI;
 using TMPro;
 using UnityEngine;
@@ -12,6 +13,7 @@ namespace FloorPlanViz.Editor
         {
             var hud = Page<ArHud>("ArHud", root);
             var rect = (RectTransform)hud.transform;
+            var walkControls = WalkControls(rect);
 
             var close = IconButton("CloseButton", rect, Icons.Close, 44f, 24f, Theme.OnGlass, Theme.Glass);
             Place((RectTransform)close.transform, Vector2.up, Vector2.up, Vector2.up, new Vector2(16f, -8f), Vector2.one * 44f);
@@ -34,6 +36,7 @@ namespace FloorPlanViz.Editor
             var roof = BuildToolbarButton(toolbar, "Roof");
             var labels = BuildToolbarButton(toolbar, "Labels");
             var mode = BuildToolbarButton(toolbar, "Mode");
+            var controls = BuildToolbarButton(toolbar, "Controls");
             var reset = BuildToolbarButton(toolbar, "Reset");
             var explode = BuildToolbarButton(toolbar, "Explode");
             var edit = BuildToolbarButton(toolbar, "Edit");
@@ -55,8 +58,36 @@ namespace FloorPlanViz.Editor
             SerializedWiring.Set(hud, "resetButton", reset);
             SerializedWiring.Set(hud, "editButton", edit);
             SerializedWiring.Set(hud, "explodeButton", explode);
+            SerializedWiring.Set(hud, "controlsButton", controls);
+            SerializedWiring.Set(hud, "walkControls", walkControls);
             SerializedWiring.Set(hud, "levelPicker", levels);
             return hud;
+        }
+
+        /// <summary>Game-style touch zones behind the other controls: a floating thumbstick on the left half, look-drag on the right.</summary>
+        static GameObject WalkControls(RectTransform parent)
+        {
+            var controls = Stretch(Node("WalkControls", parent));
+
+            var move = Place(Node("MovePad", controls), Vector2.zero, new Vector2(0.5f, 1f), Vector2.zero, Vector2.zero, Vector2.zero);
+            Fill(move, Color.clear).raycastTarget = true;
+            var stick = Place(Node("Stick", move), Vector2.zero, Vector2.zero, Vector2.one * 0.5f, new Vector2(100f, 190f), Vector2.one * 128f);
+            var stickGroup = stick.gameObject.AddComponent<CanvasGroup>();
+            Fill(stick, Theme.Glass, 64f);
+            var ring = Place(Node("Ring", stick), Vector2.one * 0.5f, Vector2.one * 0.5f, Vector2.one * 0.5f, Vector2.zero, Vector2.one * 96f);
+            Fill(ring, Color.white.WithAlpha(0.12f), 48f);
+            var knob = Place(Node("Knob", stick), Vector2.one * 0.5f, Vector2.one * 0.5f, Vector2.one * 0.5f, Vector2.zero, Vector2.one * 58f);
+            Fill(knob, Theme.GlassActive, 29f);
+            DropShadow(knob, 8f, 0.3f);
+            var joystick = move.gameObject.AddComponent<VirtualJoystick>();
+            SerializedWiring.Set(joystick, "stick", stick);
+            SerializedWiring.Set(joystick, "knob", knob);
+            SerializedWiring.Set(joystick, "group", stickGroup);
+
+            var look = Place(Node("LookPad", controls), new Vector2(0.5f, 0f), Vector2.one, Vector2.zero, Vector2.zero, Vector2.zero);
+            Fill(look, Color.clear).raycastTarget = true;
+            look.gameObject.AddComponent<LookPad>();
+            return controls.gameObject;
         }
 
         /// <summary>A dark glass capsule, centred at the top, that sizes itself to its text.</summary>

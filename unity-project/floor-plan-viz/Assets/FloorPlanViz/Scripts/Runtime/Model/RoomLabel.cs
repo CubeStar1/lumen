@@ -12,7 +12,6 @@ namespace FloorPlanViz.Model
         [SerializeField] Vector2 padding = new(0.5f, 0.3f);
 
         TextMeshPro text;
-        Transform viewer;
 
         void Awake()
         {
@@ -33,13 +32,10 @@ namespace FloorPlanViz.Model
 
         void LateUpdate()
         {
-            if (viewer == null)
-            {
-                var camera = Camera.main;
-                if (camera == null)
-                    return;
-                viewer = camera.transform;
-            }
+            var camera = Camera.main;
+            if (camera == null)
+                return;
+            var viewer = camera.transform;
             transform.rotation = Quaternion.LookRotation(transform.position - viewer.position, viewer.up);
         }
     }

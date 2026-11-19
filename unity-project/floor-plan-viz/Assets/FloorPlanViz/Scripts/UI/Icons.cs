@@ -18,6 +18,7 @@ namespace FloorPlanViz.UI
         public const string Deck = "";
         public const string Dining = "";
         public const string DoorFront = "";
+        public const string Gamepad = "";
         public const string Error = "";
         public const string Kitchen = "";
         public const string Layers = "";
